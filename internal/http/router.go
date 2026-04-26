@@ -7,10 +7,12 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/hwdavr/notes-app-backend/internal/config"
 	"github.com/hwdavr/notes-app-backend/internal/http/handlers"
+	"go.uber.org/zap"
 )
 
-func NewRouter(ih *handlers.ItemsHandler, cfg config.Config) http.Handler {
+func NewRouter(ih *handlers.ItemsHandler, cfg config.Config, log *zap.Logger) http.Handler {
 	r := chi.NewRouter()
+	r.Use(Logger(log))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},

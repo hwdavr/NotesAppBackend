@@ -14,7 +14,7 @@ This project is a Go backend for a mobile notes application. It follows the same
 
 Required environment variables:
 
-- `ADDR` server bind address, default `:8080`
+- `ADDR` server bind address, default `0.0.0.0:8080` (use `0.0.0.0` for access from AVD/other devices)
 - `DATABASE_URL` PostgreSQL connection string
 - `AUTH0_ISSUER` default `https://dev-9sa8k5kv.us.auth0.com/`
 - `AUTH0_AUDIENCE` default `https://notes-app.api`
@@ -84,7 +84,7 @@ Folder updates are not treated as one big object update. The API separates:
 ## Example Run
 
 ```bash
-export ADDR=:8080
+export ADDR=0.0.0.0:8080
 export DATABASE_URL=postgres://postgres:postgres@localhost:5432/notes_app?sslmode=disable
 export AUTH0_ISSUER=https://dev-9sa8k5kv.us.auth0.com/
 export AUTH0_AUDIENCE=https://notes-app.api

@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: notes-app-backend
+    runtime: go
+    plan: starter
+    buildCommand: go build -o app ./cmd/server
+    startCommand: ./app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: notes-app-db
+          property: connectionString
+      - key: ADDR
+        value: :8080
+      - key: AUTH0_ISSUER
+        value: https://dev-9sa8k5kv.us.auth0.com/
+      - key: AUTH0_AUDIENCE
+        value: https://notes-app.api
+      - key: AUTH0_JWKS_URL
+        value: https://dev-9sa8k5kv.us.auth0.com/.well-known/jwks.json
+
+databases:
+  - name: notes-app-db
+    plan: free

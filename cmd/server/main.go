@@ -26,7 +26,7 @@ func main() {
 	svc := domain.NewService(repo)
 	ih := &handlers.ItemsHandler{Svc: svc}
 
-	router := apihttp.NewRouter(ih, cfg)
+	router := apihttp.NewRouter(ih, cfg, log)
 
 	log.Info("server starting", zap.String("addr", cfg.Addr))
 	if err := stdhttp.ListenAndServe(cfg.Addr, router); err != nil {
