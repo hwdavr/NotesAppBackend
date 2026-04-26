@@ -1,0 +1,608 @@
+openapi: 3.1.0
+info:
+  title: Notes App Backend API
+  version: 1.0.0
+  summary: Tree-based notes and folders API for the mobile app
+  description: |
+    Authenticated API for tree-based folders and notes.
+
+    Items are modeled independently with `parentId` instead of storing the full
+    folder tree as a single document. Folder and note mutations are split into
+    separate operations such as rename, move, reorder, delete, and note content
+    update to reduce conflicts during sync.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: Health
+  - name: Items
+  - name: Folders
+  - name: Notes
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /v1/items:
+    get:
+      tags: [Items]
+      summary: List tree items
+      operationId: listItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: type
+          schema:
+            $ref: "#/components/schemas/ItemType"
+          description: Filter by item type
+        - in: query
+          name: parentId
+          schema:
+            type: string
+          description: Return children of a specific parent
+        - in: query
+          name: rootOnly
+          schema:
+            type: boolean
+          description: Return only root-level items
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search by item name and note content
+        - in: query
+          name: sinceVersion
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+          description: Return items with version greater than this value
+        - in: query
+          name: includeDeleted
+          schema:
+            type: boolean
+          description: Include tombstoned items
+      responses:
+        "200":
+          description: Items returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/items/{itemID}:
+    get:
+      tags: [Items]
+      summary: Get a single item
+      operationId: getItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      responses:
+        "200":
+          description: Item returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Items]
+      summary: Delete an item subtree
+      description: Soft-deletes the target item and all descendants by setting `deletedAt`.
+      operationId: deleteItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteItemRequest"
+      responses:
+        "200":
+          description: Item deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/folders:
+    post:
+      tags: [Folders]
+      summary: Create a folder
+      operationId: createFolder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFolderRequest"
+      responses:
+        "201":
+          description: Folder created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/notes:
+    post:
+      tags: [Notes]
+      summary: Create a note
+      operationId: createNote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteRequest"
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/items/{itemID}/rename:
+    patch:
+      tags: [Items]
+      summary: Rename a folder or note
+      operationId: renameItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameItemRequest"
+      responses:
+        "200":
+          description: Rename applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/items/{itemID}/move:
+    patch:
+      tags: [Items]
+      summary: Move a folder or note
+      operationId: moveItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveItemRequest"
+      responses:
+        "200":
+          description: Move applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/items/{itemID}/reorder:
+    patch:
+      tags: [Items]
+      summary: Reorder a folder or note
+      operationId: reorderItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderItemRequest"
+      responses:
+        "200":
+          description: Reorder applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/notes/{itemID}/content:
+    patch:
+      tags: [Notes]
+      summary: Update note content
+      operationId: updateNoteContent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteContentRequest"
+      responses:
+        "200":
+          description: Content update applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Auth0 access token. The backend validates:
+        - issuer `https://dev-9sa8k5kv.us.auth0.com/`
+        - audience `https://notes-app.api`
+        - algorithm `RS256`
+        - signature against Auth0 JWKS
+        - `exp` not expired
+
+  parameters:
+    ItemID:
+      in: path
+      name: itemID
+      required: true
+      schema:
+        type: string
+      description: Item identifier
+
+  responses:
+    BadRequest:
+      description: Invalid request payload or query
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: invalid item payload
+    Unauthorized:
+      description: Missing or invalid Auth0 access token
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: invalid token
+    NotFound:
+      description: Item not found
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: item not found
+    Conflict:
+      description: Conflict detected during version-based mutation
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MutationResult"
+        text/plain:
+          schema:
+            type: string
+            example: sync conflict
+
+  schemas:
+    ItemType:
+      type: string
+      enum: [folder, note]
+
+    Item:
+      type: object
+      required:
+        - id
+        - userId
+        - type
+        - name
+        - content
+        - sortKey
+        - version
+        - deviceId
+        - lastSyncedVersion
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: item_123
+        userId:
+          type: string
+          example: auth0|abc123
+        type:
+          $ref: "#/components/schemas/ItemType"
+        parentId:
+          type:
+            - string
+            - "null"
+          example: folder_001
+        name:
+          type: string
+          example: Work
+        content:
+          type: string
+          description: Empty string for folders
+          example: Milk\nEggs
+        sortKey:
+          type: string
+          example: a0
+        version:
+          type: integer
+          format: int64
+          example: 8
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 7
+        deletedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-04-26T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-04-26T10:00:00Z"
+
+    MutationResult:
+      type: object
+      required:
+        - status
+        - item
+      properties:
+        status:
+          type: string
+          enum: [merged, conflict]
+        item:
+          $ref: "#/components/schemas/Item"
+        conflictFields:
+          type: array
+          items:
+            type: string
+          example: [name]
+        message:
+          type: string
+          example: server kept newer value for: name
+
+    CreateFolderRequest:
+      type: object
+      required:
+        - name
+        - sortKey
+        - deviceId
+      properties:
+        id:
+          type: string
+          description: Optional client-generated ID
+          example: folder_001
+        parentId:
+          type:
+            - string
+            - "null"
+          example: null
+        name:
+          type: string
+          example: Work
+        sortKey:
+          type: string
+          example: a0
+        deviceId:
+          type: string
+          example: ios_abc
+
+    CreateNoteRequest:
+      type: object
+      required:
+        - name
+        - content
+        - sortKey
+        - deviceId
+      properties:
+        id:
+          type: string
+          description: Optional client-generated ID
+          example: note_123
+        parentId:
+          type:
+            - string
+            - "null"
+          example: folder_001
+        name:
+          type: string
+          example: Shopping
+        content:
+          type: string
+          example: Milk\nEggs
+        sortKey:
+          type: string
+          example: a1
+        deviceId:
+          type: string
+          example: ios_abc
+
+    RenameItemRequest:
+      type: object
+      required:
+        - name
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        name:
+          type: string
+          example: Work Archive
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 8
+
+    MoveItemRequest:
+      type: object
+      required:
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        parentId:
+          type:
+            - string
+            - "null"
+          description: Null moves the item to root
+          example: folder_001
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 8
+
+    ReorderItemRequest:
+      type: object
+      required:
+        - sortKey
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        sortKey:
+          type: string
+          example: a2
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 8
+
+    UpdateNoteContentRequest:
+      type: object
+      required:
+        - content
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        content:
+          type: string
+          example: Milk\nEggs\nBread
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 12
+
+    DeleteItemRequest:
+      type: object
+      required:
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 8
