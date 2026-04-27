@@ -92,13 +92,13 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, itemID string, inpu
 			content = COALESCE($4, content),
 			parent_id = CASE
 				WHEN $5 THEN NULL
-				WHEN $6 IS NOT NULL THEN $6
+				WHEN $6::text IS NOT NULL THEN $6::text
 				ELSE parent_id
 			END,
 			sort_key = COALESCE($7, sort_key),
 			deleted_at = CASE
 				WHEN $8 THEN NULL
-				WHEN $9 IS NOT NULL THEN $9
+				WHEN $9::timestamptz IS NOT NULL THEN $9::timestamptz
 				ELSE deleted_at
 			END,
 			device_id = $10,

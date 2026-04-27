@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -254,6 +255,9 @@ func writeDomainError(w http.ResponseWriter, err error) {
 		status = http.StatusConflict
 	case errors.Is(err, domain.ErrInvalidMove):
 		status = http.StatusConflict
+	}
+	if status == http.StatusInternalServerError {
+		fmt.Println("INTERNAL SERVER ERROR:", err)
 	}
 	http.Error(w, err.Error(), status)
 }
