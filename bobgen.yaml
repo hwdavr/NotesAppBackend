@@ -1,0 +1,11 @@
+psql:
+  dsn: "postgres://postgres:postgres@db:5432/notes_app?sslmode=disable"
+  schemas: ["public"]
+  shared_schema: "public"
+
+output_dir: "./internal/db/models"
+package: "models"
+tags:
+  - json
+struct_tag_casing: camel
+plugins_preset: "all"
