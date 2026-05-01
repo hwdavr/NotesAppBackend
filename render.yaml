@@ -2,7 +2,7 @@ services:
   - type: web
     name: notes-app-backend
     runtime: go
-    plan: starter
+    plan: free
     buildCommand: go build -o app ./cmd/server
     startCommand: ./app
     envVars:
