@@ -148,7 +148,7 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, itemID string, inpu
 		setter,
 		um.Where(models.ItemColumns.ID.EQ(psql.Arg(itemID))),
 		um.Where(models.ItemColumns.UserID.EQ(psql.Arg(userID))),
-		um.Set(models.ItemColumns.Version, psql.Raw("version + 1")),
+		um.Set(psql.Raw("version = version + 1")),
 	).Exec(ctx, r.DB)
 
 	if err != nil {

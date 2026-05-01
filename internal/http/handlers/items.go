@@ -9,10 +9,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/hwdavr/notes-app-backend/internal/domain"
 	"github.com/hwdavr/notes-app-backend/internal/pkg/userctx"
+	"go.uber.org/zap"
 )
 
 type ItemsHandler struct {
 	Svc *domain.Service
+	Log *zap.Logger
 }
 
 func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -24,7 +26,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.Svc.ListItems(r.Context(), userIDFromContext(r), filter)
 	if err != nil {
-		writeDomainError(w, err)
+		h.writeDomainError(w, err)
 		return
 	}
 
@@ -35,7 +37,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *ItemsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	item, err := h.Svc.GetItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"))
 	if err != nil {
-		writeDomainError(w, err)
+		h.writeDomainError(w, err)
 		return
 	}
 
@@ -64,7 +66,7 @@ func (h *ItemsHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 		DeviceID: req.DeviceID,
 	})
 	if err != nil {
-		writeDomainError(w, err)
+		h.writeDomainError(w, err)
 		return
 	}
 
@@ -96,7 +98,7 @@ func (h *ItemsHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 		DeviceID: req.DeviceID,
 	})
 	if err != nil {
-		writeDomainError(w, err)
+		h.writeDomainError(w, err)
 		return
 	}
 
@@ -117,7 +119,7 @@ func (h *ItemsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.Svc.RenameItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.Name, req.DeviceID, req.LastSyncedVersion)
-	writeMutationResult(w, result, err)
+	h.writeMutationResult(w, result, err)
 }
 
 func (h *ItemsHandler) Move(w http.ResponseWriter, r *http.Request) {
@@ -132,7 +134,7 @@ func (h *ItemsHandler) Move(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.Svc.MoveItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.ParentID, req.LastSyncedVersion)
-	writeMutationResult(w, result, err)
+	h.writeMutationResult(w, result, err)
 }
 
 func (h *ItemsHandler) Reorder(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +149,7 @@ func (h *ItemsHandler) Reorder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.Svc.ReorderItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.SortKey, req.DeviceID, req.LastSyncedVersion)
-	writeMutationResult(w, result, err)
+	h.writeMutationResult(w, result, err)
 }
 
 func (h *ItemsHandler) UpdateNoteContent(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +164,7 @@ func (h *ItemsHandler) UpdateNoteContent(w http.ResponseWriter, r *http.Request)
 	}
 
 	result, err := h.Svc.UpdateNoteContent(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.Content, req.DeviceID, req.LastSyncedVersion)
-	writeMutationResult(w, result, err)
+	h.writeMutationResult(w, result, err)
 }
 
 func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +178,7 @@ func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.Svc.DeleteItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.LastSyncedVersion)
-	writeMutationResult(w, result, err)
+	h.writeMutationResult(w, result, err)
 }
 
 func parseListFilter(r *http.Request) (domain.ListItemsFilter, error) {
@@ -228,9 +230,9 @@ func userIDFromContext(r *http.Request) string {
 	return userID
 }
 
-func writeMutationResult(w http.ResponseWriter, result domain.MutationResult, err error) {
+func (h *ItemsHandler) writeMutationResult(w http.ResponseWriter, result domain.MutationResult, err error) {
 	if err != nil && !errors.Is(err, domain.ErrSyncConflict) {
-		writeDomainError(w, err)
+		h.writeDomainError(w, err)
 		return
 	}
 
@@ -243,7 +245,7 @@ func writeMutationResult(w http.ResponseWriter, result domain.MutationResult, er
 	_ = json.NewEncoder(w).Encode(result)
 }
 
-func writeDomainError(w http.ResponseWriter, err error) {
+func (h *ItemsHandler) writeDomainError(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
 	switch {
 	case errors.Is(err, domain.ErrInvalidItem):
@@ -255,5 +257,10 @@ func writeDomainError(w http.ResponseWriter, err error) {
 	case errors.Is(err, domain.ErrInvalidMove):
 		status = http.StatusConflict
 	}
+
+	if status == http.StatusInternalServerError {
+		h.Log.Error("domain error", zap.Error(err))
+	}
+
 	http.Error(w, err.Error(), status)
 }

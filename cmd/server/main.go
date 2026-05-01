@@ -24,7 +24,7 @@ func main() {
 
 	repo := domain.NewRepository(pg)
 	svc := domain.NewService(repo)
-	ih := &handlers.ItemsHandler{Svc: svc}
+	ih := &handlers.ItemsHandler{Svc: svc, Log: log}
 
 	router := apihttp.NewRouter(ih, cfg, log)
 
