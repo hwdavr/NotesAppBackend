@@ -181,6 +181,21 @@ func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	h.writeMutationResult(w, result, err)
 }
 
+func (h *ItemsHandler) Favorite(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IsFavorite        bool   `json:"isFavorite"`
+		DeviceID          string `json:"deviceId"`
+		LastSyncedVersion int64  `json:"lastSyncedVersion"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.Svc.FavoriteItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.IsFavorite, req.LastSyncedVersion)
+	h.writeMutationResult(w, result, err)
+}
+
 func parseListFilter(r *http.Request) (domain.ListItemsFilter, error) {
 	filter := domain.ListItemsFilter{
 		Type:  r.URL.Query().Get("type"),

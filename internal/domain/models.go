@@ -21,6 +21,7 @@ type Item struct {
 	DeletedAt         *time.Time `db:"deleted_at" json:"deletedAt"`
 	CreatedAt         time.Time  `db:"created_at" json:"createdAt"`
 	UpdatedAt         time.Time  `db:"updated_at" json:"updatedAt"`
+	IsFavorite        bool       `db:"is_favorite" json:"isFavorite"`
 }
 
 type CreateItemInput struct {
@@ -43,6 +44,7 @@ type UpdateItemInput struct {
 	ClearDeletedAt    bool
 	DeviceID          string
 	LastSyncedVersion int64
+	IsFavorite        *bool
 }
 
 type ListItemsFilter struct {

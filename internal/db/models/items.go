@@ -34,6 +34,7 @@ type Item struct {
 	DeletedAt         null.Val[time.Time] `db:"deleted_at" json:"deletedAt"`
 	CreatedAt         time.Time           `db:"created_at" json:"createdAt"`
 	UpdatedAt         time.Time           `db:"updated_at" json:"updatedAt"`
+	IsFavorite        bool                `db:"is_favorite" json:"isFavorite"`
 }
 
 // ItemSlice is an alias for a slice of pointers to Item.
@@ -66,10 +67,11 @@ type ItemSetter struct {
 	DeletedAt         omitnull.Val[time.Time] `db:"deleted_at" json:"deletedAt"`
 	CreatedAt         omit.Val[time.Time]     `db:"created_at" json:"createdAt"`
 	UpdatedAt         omit.Val[time.Time]     `db:"updated_at" json:"updatedAt"`
+	IsFavorite        omit.Val[bool]          `db:"is_favorite" json:"isFavorite"`
 }
 
 func (s ItemSetter) SetColumns() []string {
-	vals := make([]string, 0, 13)
+	vals := make([]string, 0, 14)
 	if !s.ID.IsUnset() {
 		vals = append(vals, "id")
 	}
@@ -121,6 +123,9 @@ func (s ItemSetter) SetColumns() []string {
 	if !s.UpdatedAt.IsUnset() {
 		vals = append(vals, "updated_at")
 	}
+	if !s.IsFavorite.IsUnset() {
+		vals = append(vals, "is_favorite")
+	}
 
 	return vals
 }
@@ -165,10 +170,13 @@ func (s ItemSetter) Overwrite(t *Item) {
 	if !s.UpdatedAt.IsUnset() {
 		t.UpdatedAt, _ = s.UpdatedAt.Get()
 	}
+	if !s.IsFavorite.IsUnset() {
+		t.IsFavorite, _ = s.IsFavorite.Get()
+	}
 }
 
 func (s ItemSetter) InsertMod() bob.Mod[*dialect.InsertQuery] {
-	vals := make([]bob.Expression, 13)
+	vals := make([]bob.Expression, 14)
 	if s.ID.IsUnset() {
 		vals[0] = psql.Raw("DEFAULT")
 	} else {
@@ -246,6 +254,11 @@ func (s ItemSetter) InsertMod() bob.Mod[*dialect.InsertQuery] {
 	} else {
 		vals[12] = psql.Arg(s.UpdatedAt)
 	}
+	if s.IsFavorite.IsUnset() {
+		vals[13] = psql.Raw("DEFAULT")
+	} else {
+		vals[13] = psql.Arg(s.IsFavorite)
+	}
 
 	return im.Values(vals...)
 }
@@ -255,7 +268,7 @@ func (s ItemSetter) Apply(q *dialect.UpdateQuery) {
 }
 
 func (s ItemSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 13)
+	exprs := make([]bob.Expression, 0, 14)
 
 	if !s.ID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -347,6 +360,12 @@ func (s ItemSetter) Expressions(prefix ...string) []bob.Expression {
 			psql.Arg(s.UpdatedAt),
 		}})
 	}
+	if !s.IsFavorite.IsUnset() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "is_favorite")...),
+			psql.Arg(s.IsFavorite),
+		}})
+	}
 
 	return exprs
 }
@@ -365,6 +384,7 @@ type itemColumnNames struct {
 	DeletedAt         string
 	CreatedAt         string
 	UpdatedAt         string
+	IsFavorite        string
 }
 
 var ItemColumns = buildItemColumns("items")
@@ -384,6 +404,7 @@ type itemColumns struct {
 	DeletedAt         psql.Expression
 	CreatedAt         psql.Expression
 	UpdatedAt         psql.Expression
+	IsFavorite        psql.Expression
 }
 
 func (c itemColumns) Alias() string {
@@ -410,6 +431,7 @@ func buildItemColumns(alias string) itemColumns {
 		DeletedAt:         psql.Quote(alias, "deleted_at"),
 		CreatedAt:         psql.Quote(alias, "created_at"),
 		UpdatedAt:         psql.Quote(alias, "updated_at"),
+		IsFavorite:        psql.Quote(alias, "is_favorite"),
 	}
 }
 
@@ -427,6 +449,7 @@ type itemWhere[Q psql.Filterable] struct {
 	DeletedAt         psql.WhereNullMod[Q, time.Time]
 	CreatedAt         psql.WhereMod[Q, time.Time]
 	UpdatedAt         psql.WhereMod[Q, time.Time]
+	IsFavorite        psql.WhereMod[Q, bool]
 }
 
 func (itemWhere[Q]) AliasedAs(alias string) itemWhere[Q] {
@@ -448,6 +471,7 @@ func buildItemWhere[Q psql.Filterable](cols itemColumns) itemWhere[Q] {
 		DeletedAt:         psql.WhereNull[Q, time.Time](cols.DeletedAt),
 		CreatedAt:         psql.Where[Q, time.Time](cols.CreatedAt),
 		UpdatedAt:         psql.Where[Q, time.Time](cols.UpdatedAt),
+		IsFavorite:        psql.Where[Q, bool](cols.IsFavorite),
 	}
 }
 

@@ -234,3 +234,38 @@ func (s *Service) DeleteItem(ctx context.Context, userID, itemID, deviceID strin
 
 	return MutationResult{Status: "merged", Item: item}, nil
 }
+
+func (s *Service) FavoriteItem(ctx context.Context, userID, itemID, deviceID string, isFavorite bool, lastSyncedVersion int64) (MutationResult, error) {
+	deviceID = strings.TrimSpace(deviceID)
+	if userID == "" || itemID == "" || deviceID == "" {
+		return MutationResult{}, ErrInvalidItem
+	}
+
+	current, err := s.Repo.GetItem(ctx, userID, itemID)
+	if err != nil {
+		return MutationResult{}, err
+	}
+
+	update := UpdateItemInput{
+		DeviceID:          deviceID,
+		LastSyncedVersion: lastSyncedVersion,
+	}
+	if lastSyncedVersion >= current.Version || current.IsFavorite == isFavorite {
+		update.IsFavorite = &isFavorite
+	}
+
+	item, err := s.Repo.UpdateItem(ctx, userID, itemID, update)
+	if err != nil {
+		return MutationResult{}, err
+	}
+	if update.IsFavorite == nil {
+		return MutationResult{
+			Status:         "conflict",
+			Item:           item,
+			ConflictFields: []string{"isFavorite"},
+			Message:        "server kept newer value for: isFavorite",
+		}, ErrSyncConflict
+	}
+
+	return MutationResult{Status: "merged", Item: item}, nil
+}

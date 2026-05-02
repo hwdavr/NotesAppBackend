@@ -287,6 +287,37 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /v1/items/{itemID}/favorite:
+    patch:
+      tags: [Items]
+      summary: Toggle favorite status
+      operationId: favoriteItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteItemRequest"
+      responses:
+        "200":
+          description: Favorite status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
   /v1/notes/{itemID}/content:
     patch:
       tags: [Notes]
@@ -393,6 +424,7 @@ components:
         - lastSyncedVersion
         - createdAt
         - updatedAt
+        - isFavorite
       properties:
         id:
           type: string
@@ -442,6 +474,9 @@ components:
           type: string
           format: date-time
           example: "2026-04-26T10:00:00Z"
+        isFavorite:
+          type: boolean
+          example: false
 
     MutationResult:
       type: object
@@ -599,6 +634,24 @@ components:
         - deviceId
         - lastSyncedVersion
       properties:
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 8
+
+    FavoriteItemRequest:
+      type: object
+      required:
+        - isFavorite
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        isFavorite:
+          type: boolean
+          example: true
         deviceId:
           type: string
           example: ios_abc

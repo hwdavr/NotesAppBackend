@@ -142,6 +142,9 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, itemID string, inpu
 	} else if input.DeletedAt != nil {
 		setter.DeletedAt = omitnull.From(*input.DeletedAt)
 	}
+	if input.IsFavorite != nil {
+		setter.IsFavorite = omit.From(*input.IsFavorite)
+	}
 
 	_, err := psql.Update(
 		um.Table(models.TableNames.Items),
@@ -227,5 +230,6 @@ func mapModelToItem(m *models.Item) Item {
 		DeletedAt:         m.DeletedAt.Ptr(),
 		CreatedAt:         m.CreatedAt,
 		UpdatedAt:         m.UpdatedAt,
+		IsFavorite:        m.IsFavorite,
 	}
 }

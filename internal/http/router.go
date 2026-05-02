@@ -38,6 +38,7 @@ func NewRouter(ih *handlers.ItemsHandler, cfg config.Config, log *zap.Logger) ht
 			api.Patch("/items/{itemID}/rename", ih.Rename)
 			api.Patch("/items/{itemID}/move", ih.Move)
 			api.Patch("/items/{itemID}/reorder", ih.Reorder)
+			api.Patch("/items/{itemID}/favorite", ih.Favorite)
 			api.Patch("/notes/{itemID}/content", ih.UpdateNoteContent)
 			api.Delete("/items/{itemID}", ih.Delete)
 		})
