@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/hwdavr/notes-app-backend/internal/pkg/email"
 )
 
 var (
@@ -12,14 +14,16 @@ var (
 	ErrItemNotFound = errors.New("item not found")
 	ErrSyncConflict = errors.New("sync conflict")
 	ErrInvalidMove  = errors.New("invalid move")
+	ErrConflict     = errors.New("conflict")
 )
 
 type Service struct {
-	Repo *Repository
+	Repo  *Repository
+	Email email.Service
 }
 
-func NewService(r *Repository) *Service {
-	return &Service{Repo: r}
+func NewService(r *Repository, e email.Service) *Service {
+	return &Service{Repo: r, Email: e}
 }
 
 func (s *Service) CreateFolder(ctx context.Context, userID string, input CreateItemInput) (Item, error) {
@@ -268,4 +272,80 @@ func (s *Service) FavoriteItem(ctx context.Context, userID, itemID, deviceID str
 	}
 
 	return MutationResult{Status: "merged", Item: item}, nil
+}
+
+func (s *Service) ListNoteShares(ctx context.Context, userID, noteID string) ([]NoteShare, error) {
+	// Verify user has access to the note
+	_, err := s.Repo.GetItem(ctx, userID, noteID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.Repo.ListNoteShares(ctx, noteID)
+}
+
+func (s *Service) CreateNoteShare(ctx context.Context, userID, noteID string, input CreateNoteShareRequest) (NoteShare, error) {
+	input.Email = strings.ToLower(strings.TrimSpace(input.Email))
+	if input.Email == "" || (input.AccessRole != AccessRoleReadOnly && input.AccessRole != AccessRoleFullAccess) {
+		return NoteShare{}, ErrInvalidItem
+	}
+
+	// Verify user is the owner of the note
+	note, err := s.Repo.GetItem(ctx, userID, noteID)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	if note.UserID != userID {
+		return NoteShare{}, ErrItemNotFound // Or Unauthorized if we had that error
+	}
+
+	// Check if already shared
+	_, err = s.Repo.GetNoteShareByNoteAndEmail(ctx, noteID, input.Email)
+	if err == nil {
+		// Already shared
+		return NoteShare{}, ErrConflict
+	}
+
+	share, err := s.Repo.CreateNoteShare(ctx, noteID, input.Email, input.AccessRole, ShareStatusPending, userID)
+	if err != nil {
+		return NoteShare{}, err
+	}
+
+	// Send email
+	if err := s.Email.SendInvite(input.Email, note.Name, userID); err != nil {
+		// Log error but don't fail the request?
+		// For now, let's just log it.
+	}
+
+	return share, nil
+}
+
+func (s *Service) UpdateNoteShare(ctx context.Context, userID, noteID, shareID string, input UpdateNoteShareRequest) (NoteShare, error) {
+	if input.AccessRole != AccessRoleReadOnly && input.AccessRole != AccessRoleFullAccess {
+		return NoteShare{}, ErrInvalidItem
+	}
+
+	// Verify user is the owner of the note
+	note, err := s.Repo.GetItem(ctx, userID, noteID)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	if note.UserID != userID {
+		return NoteShare{}, ErrItemNotFound
+	}
+
+	return s.Repo.UpdateNoteShare(ctx, noteID, shareID, input.AccessRole)
+}
+
+func (s *Service) DeleteNoteShare(ctx context.Context, userID, noteID, shareID string) error {
+	// Verify user is the owner of the note
+	note, err := s.Repo.GetItem(ctx, userID, noteID)
+	if err != nil {
+		return err
+	}
+	if note.UserID != userID {
+		return ErrItemNotFound
+	}
+
+	return s.Repo.DeleteNoteShare(ctx, noteID, shareID)
 }

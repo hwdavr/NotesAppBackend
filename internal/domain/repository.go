@@ -233,3 +233,148 @@ func mapModelToItem(m *models.Item) Item {
 		IsFavorite:        m.IsFavorite,
 	}
 }
+
+func (r *Repository) CreateNoteShare(ctx context.Context, noteID, email, accessRole, status, invitedBy string) (NoteShare, error) {
+	query := `
+		INSERT INTO note_shares (note_id, email, access_role, status, invited_by_user_id, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+		RETURNING id, note_id, email, access_role, status, invited_by_user_id, created_at, updated_at
+	`
+	rows, err := r.DB.QueryContext(ctx, query, noteID, email, accessRole, status, invitedBy)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return NoteShare{}, sql.ErrNoRows
+	}
+
+	var s NoteShare
+	err = rows.Scan(
+		&s.ID, &s.NoteID, &s.Email, &s.AccessRole, &s.Status, &s.InvitedByUserID, &s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	return s, nil
+}
+
+func (r *Repository) ListNoteShares(ctx context.Context, noteID string) ([]NoteShare, error) {
+	query := `
+		SELECT id, note_id, email, access_role, status, invited_by_user_id, created_at, updated_at
+		FROM note_shares
+		WHERE note_id = $1
+		ORDER BY created_at ASC
+	`
+	rows, err := r.DB.QueryContext(ctx, query, noteID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var shares []NoteShare
+	for rows.Next() {
+		var s NoteShare
+		if err := rows.Scan(&s.ID, &s.NoteID, &s.Email, &s.AccessRole, &s.Status, &s.InvitedByUserID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			return nil, err
+		}
+		shares = append(shares, s)
+	}
+	return shares, nil
+}
+
+func (r *Repository) GetNoteShare(ctx context.Context, noteID, shareID string) (NoteShare, error) {
+	query := `
+		SELECT id, note_id, email, access_role, status, invited_by_user_id, created_at, updated_at
+		FROM note_shares
+		WHERE note_id = $1 AND id = $2
+	`
+	rows, err := r.DB.QueryContext(ctx, query, noteID, shareID)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return NoteShare{}, ErrItemNotFound
+	}
+
+	var s NoteShare
+	err = rows.Scan(
+		&s.ID, &s.NoteID, &s.Email, &s.AccessRole, &s.Status, &s.InvitedByUserID, &s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	return s, nil
+}
+
+func (r *Repository) GetNoteShareByNoteAndEmail(ctx context.Context, noteID, email string) (NoteShare, error) {
+	query := `
+		SELECT id, note_id, email, access_role, status, invited_by_user_id, created_at, updated_at
+		FROM note_shares
+		WHERE note_id = $1 AND email = $2
+	`
+	rows, err := r.DB.QueryContext(ctx, query, noteID, email)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return NoteShare{}, ErrItemNotFound
+	}
+
+	var s NoteShare
+	err = rows.Scan(
+		&s.ID, &s.NoteID, &s.Email, &s.AccessRole, &s.Status, &s.InvitedByUserID, &s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	return s, nil
+}
+
+func (r *Repository) UpdateNoteShare(ctx context.Context, noteID, shareID, accessRole string) (NoteShare, error) {
+	query := `
+		UPDATE note_shares
+		SET access_role = $3, updated_at = NOW()
+		WHERE note_id = $1 AND id = $2
+		RETURNING id, note_id, email, access_role, status, invited_by_user_id, created_at, updated_at
+	`
+	rows, err := r.DB.QueryContext(ctx, query, noteID, shareID, accessRole)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return NoteShare{}, ErrItemNotFound
+	}
+
+	var s NoteShare
+	err = rows.Scan(
+		&s.ID, &s.NoteID, &s.Email, &s.AccessRole, &s.Status, &s.InvitedByUserID, &s.CreatedAt, &s.UpdatedAt,
+	)
+	if err != nil {
+		return NoteShare{}, err
+	}
+	return s, nil
+}
+
+func (r *Repository) DeleteNoteShare(ctx context.Context, noteID, shareID string) error {
+	query := `DELETE FROM note_shares WHERE note_id = $1 AND id = $2`
+	res, err := r.DB.ExecContext(ctx, query, noteID, shareID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrItemNotFound
+	}
+	return nil
+}

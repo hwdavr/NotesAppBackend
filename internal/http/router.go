@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewRouter(ih *handlers.ItemsHandler, cfg config.Config, log *zap.Logger) http.Handler {
+func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, cfg config.Config, log *zap.Logger) http.Handler {
 	r := chi.NewRouter()
 	r.Use(Logger(log))
 	r.Use(cors.Handler(cors.Options{
@@ -41,6 +41,10 @@ func NewRouter(ih *handlers.ItemsHandler, cfg config.Config, log *zap.Logger) ht
 			api.Patch("/items/{itemID}/favorite", ih.Favorite)
 			api.Patch("/notes/{itemID}/content", ih.UpdateNoteContent)
 			api.Delete("/items/{itemID}", ih.Delete)
+			api.Get("/notes/{itemID}/shares", sh.List)
+			api.Post("/notes/{itemID}/shares", sh.Create)
+			api.Patch("/notes/{itemID}/shares/{shareID}", sh.Update)
+			api.Delete("/notes/{itemID}/shares/{shareID}", sh.Delete)
 		})
 	})
 

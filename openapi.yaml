@@ -18,6 +18,7 @@ tags:
   - name: Items
   - name: Folders
   - name: Notes
+  - name: Note Shares
 paths:
   /healthz:
     get:
@@ -349,6 +350,110 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /v1/notes/{itemID}/shares:
+    get:
+      tags: [Note Shares]
+      summary: List note shares
+      description: |
+        Returns collaborator and invite records for the note.
+        The note owner is intentionally not returned by this API and should be added locally by the client.
+      operationId: listNoteShares
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      responses:
+        "200":
+          description: Note shares returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NoteShare"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Note Shares]
+      summary: Invite a user to a note
+      description: |
+        Creates a collaborator or pending invite record for the note.
+        Duplicate invites for the same note and email should return 409 Conflict.
+      operationId: createNoteShare
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteShareRequest"
+      responses:
+        "201":
+          description: Note share created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteShare"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/notes/{itemID}/shares/{shareID}:
+    patch:
+      tags: [Note Shares]
+      summary: Update a note share access role
+      operationId: updateNoteShare
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+        - $ref: "#/components/parameters/ShareID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteShareRequest"
+      responses:
+        "200":
+          description: Note share updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteShare"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Note Shares]
+      summary: Revoke a note share
+      operationId: deleteNoteShare
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+        - $ref: "#/components/parameters/ShareID"
+      responses:
+        "204":
+          description: Note share deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -371,6 +476,13 @@ components:
       schema:
         type: string
       description: Item identifier
+    ShareID:
+      in: path
+      name: shareID
+      required: true
+      schema:
+        type: string
+      description: Note share identifier
 
   responses:
     BadRequest:
@@ -409,6 +521,14 @@ components:
     ItemType:
       type: string
       enum: [folder, note]
+
+    AccessRole:
+      type: string
+      enum: [read_only, full_access]
+
+    ShareStatus:
+      type: string
+      enum: [pending, active]
 
     Item:
       type: object
@@ -659,3 +779,72 @@ components:
           type: integer
           format: int64
           example: 8
+
+    NoteShare:
+      type: object
+      required:
+        - id
+        - noteId
+        - email
+        - accessRole
+        - status
+        - invitedByUserId
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: share_001
+        noteId:
+          type: string
+          example: note_123
+        userId:
+          type:
+            - string
+            - "null"
+          example: auth0|invitee123
+        email:
+          type: string
+          format: email
+          example: collaborator@example.com
+        displayName:
+          type:
+            - string
+            - "null"
+          example: Hannah Lee
+        accessRole:
+          $ref: "#/components/schemas/AccessRole"
+        status:
+          $ref: "#/components/schemas/ShareStatus"
+        invitedByUserId:
+          type: string
+          example: auth0|owner123
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-09T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-05-09T10:00:00Z"
+
+    CreateNoteShareRequest:
+      type: object
+      required:
+        - email
+        - accessRole
+      properties:
+        email:
+          type: string
+          format: email
+          example: collaborator@example.com
+        accessRole:
+          $ref: "#/components/schemas/AccessRole"
+
+    UpdateNoteShareRequest:
+      type: object
+      required:
+        - accessRole
+      properties:
+        accessRole:
+          $ref: "#/components/schemas/AccessRole"

@@ -10,6 +10,7 @@ import (
 	"github.com/hwdavr/notes-app-backend/internal/domain"
 	apihttp "github.com/hwdavr/notes-app-backend/internal/http"
 	"github.com/hwdavr/notes-app-backend/internal/http/handlers"
+	"github.com/hwdavr/notes-app-backend/internal/pkg/email"
 )
 
 func main() {
@@ -23,10 +24,12 @@ func main() {
 	}
 
 	repo := domain.NewRepository(pg)
-	svc := domain.NewService(repo)
+	emailSvc := email.NewMockService()
+	svc := domain.NewService(repo, emailSvc)
 	ih := &handlers.ItemsHandler{Svc: svc, Log: log}
+	sh := &handlers.SharesHandler{Svc: svc, Log: log}
 
-	router := apihttp.NewRouter(ih, cfg, log)
+	router := apihttp.NewRouter(ih, sh, cfg, log)
 
 	log.Info("server starting", zap.String("addr", cfg.Addr))
 	if err := stdhttp.ListenAndServe(cfg.Addr, router); err != nil {

@@ -62,3 +62,33 @@ type MutationResult struct {
 	ConflictFields []string `json:"conflictFields,omitempty"`
 	Message        string   `json:"message,omitempty"`
 }
+
+const (
+	AccessRoleReadOnly   = "read_only"
+	AccessRoleFullAccess = "full_access"
+)
+
+const (
+	ShareStatusPending = "pending"
+	ShareStatusActive  = "active"
+)
+
+type NoteShare struct {
+	ID              string    `db:"id" json:"id"`
+	NoteID          string    `db:"note_id" json:"noteId"`
+	Email           string    `db:"email" json:"email"`
+	AccessRole      string    `db:"access_role" json:"accessRole"`
+	Status          string    `db:"status" json:"status"`
+	InvitedByUserID string    `db:"invited_by_user_id" json:"invitedByUserId"`
+	CreatedAt       time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt       time.Time `db:"updated_at" json:"updatedAt"`
+}
+
+type CreateNoteShareRequest struct {
+	Email      string `json:"email"`
+	AccessRole string `json:"accessRole"`
+}
+
+type UpdateNoteShareRequest struct {
+	AccessRole string `json:"accessRole"`
+}
