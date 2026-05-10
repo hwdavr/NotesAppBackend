@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"database/sql"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,8 +12,6 @@ import (
 	"github.com/hwdavr/notes-app-backend/internal/db/models"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
-	"github.com/stephenafamo/bob/dialect/psql/dialect"
-	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 )
 
@@ -50,71 +49,120 @@ func (r *Repository) CreateItem(ctx context.Context, userID string, input Create
 	return mapModelToItem(item), nil
 }
 
-func (r *Repository) ListItems(ctx context.Context, userID string, filter ListItemsFilter) ([]Item, error) {
-	var mods []bob.Mod[*dialect.SelectQuery]
-	mods = append(mods, sm.Where(models.ItemColumns.UserID.EQ(psql.Arg(userID))))
+func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, filter ListItemsFilter) ([]Item, error) {
+	// We use a raw query here to easily handle the join and the COALESCE for access_role
+	query := `
+		SELECT 
+			i.*, 
+			COALESCE(ns.access_role, 'full_access') as current_access_role,
+			(i.user_id != $1) as is_shared_item
+		FROM items i
+		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status = 'active'
+		WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
+	`
+	args := []any{userID, userEmail}
 
+	// Add filters
 	if filter.Type != "" {
-		mods = append(mods, sm.Where(models.ItemColumns.Type.EQ(psql.Arg(filter.Type))))
+		query += " AND i.type = $" + strconv.Itoa(len(args)+1)
+		args = append(args, filter.Type)
 	}
 
 	if filter.ParentID != nil {
-		mods = append(mods, sm.Where(models.ItemColumns.ParentID.EQ(psql.Arg(*filter.ParentID))))
+		query += " AND i.parent_id = $" + strconv.Itoa(len(args)+1)
+		args = append(args, *filter.ParentID)
 	} else if filter.RootOnly {
-		mods = append(mods, sm.Where(models.ItemColumns.ParentID.IsNull()))
+		query += " AND i.parent_id IS NULL"
 	}
 
 	if !filter.IncludeDeleted {
-		mods = append(mods, sm.Where(models.ItemColumns.DeletedAt.IsNull()))
+		query += " AND i.deleted_at IS NULL"
 	}
 
 	if filter.SinceVersion != nil {
-		mods = append(mods, sm.Where(models.ItemColumns.Version.GT(psql.Arg(*filter.SinceVersion))))
+		query += " AND i.version > $" + strconv.Itoa(len(args)+1)
+		args = append(args, *filter.SinceVersion)
 	}
 
 	if q := strings.TrimSpace(filter.Query); q != "" {
 		pattern := "%" + q + "%"
-		mods = append(mods, sm.Where(psql.Or(
-			models.ItemColumns.Name.ILike(psql.Arg(pattern)),
-			models.ItemColumns.Content.ILike(psql.Arg(pattern)),
-		)))
+		query += " AND (i.name ILIKE $" + strconv.Itoa(len(args)+1) + " OR i.content ILIKE $" + strconv.Itoa(len(args)+1) + ")"
+		args = append(args, pattern)
 	}
 
-	mods = append(mods,
-		sm.OrderBy(models.ItemColumns.ParentID).Asc().NullsFirst(),
-		sm.OrderBy(models.ItemColumns.SortKey).Asc(),
-		sm.OrderBy(models.ItemColumns.UpdatedAt).Desc(),
-	)
+	query += " ORDER BY i.parent_id ASC NULLS FIRST, i.sort_key ASC, i.updated_at DESC"
 
-	items, err := models.Items.Query(ctx, r.DB, mods...).All()
+	rows, err := r.DB.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
-	result := make([]Item, len(items))
-	for i, it := range items {
-		result[i] = mapModelToItem(it)
+	var result []Item
+	for rows.Next() {
+		var m models.Item
+		var accessRole string
+		var isShared bool
+		
+		// Scan all columns from models.Item plus our extra columns
+		// Since we use SELECT i.*, we need to be careful.
+		// It's safer to use Bob's scanning if possible, but for raw queries:
+		err := rows.Scan(
+			&m.ID, &m.UserID, &m.Type, &m.ParentID, &m.Name, &m.Content, &m.SortKey,
+			&m.Version, &m.DeviceID, &m.LastSyncedVersion, &m.DeletedAt, &m.CreatedAt, &m.UpdatedAt, &m.IsFavorite,
+			&accessRole, &isShared,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		domainItem := mapModelToItem(&m)
+		domainItem.IsShared = isShared
+		domainItem.AccessRole = accessRole
+		result = append(result, domainItem)
 	}
 	return result, nil
 }
 
-func (r *Repository) GetItem(ctx context.Context, userID, itemID string) (Item, error) {
-	item, err := models.Items.Query(ctx, r.DB,
-		models.SelectWhere.Items.ID.EQ(itemID),
-		models.SelectWhere.Items.UserID.EQ(userID),
-	).One()
-
+func (r *Repository) GetItem(ctx context.Context, userID, userEmail, itemID string) (Item, error) {
+	query := `
+		SELECT 
+			i.*, 
+			COALESCE(ns.access_role, 'full_access') as current_access_role,
+			(i.user_id != $1) as is_shared_item
+		FROM items i
+		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status = 'active'
+		WHERE i.id = $3 AND (i.user_id = $1 OR ns.id IS NOT NULL)
+	`
+	rows, err := r.DB.QueryContext(ctx, query, userID, userEmail, itemID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return Item{}, ErrItemNotFound
-		}
+		return Item{}, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return Item{}, ErrItemNotFound
+	}
+
+	var m models.Item
+	var accessRole string
+	var isShared bool
+	err = rows.Scan(
+		&m.ID, &m.UserID, &m.Type, &m.ParentID, &m.Name, &m.Content, &m.SortKey,
+		&m.Version, &m.DeviceID, &m.LastSyncedVersion, &m.DeletedAt, &m.CreatedAt, &m.UpdatedAt, &m.IsFavorite,
+		&accessRole, &isShared,
+	)
+	if err != nil {
 		return Item{}, err
 	}
 
-	return mapModelToItem(item), nil
+	domainItem := mapModelToItem(&m)
+	domainItem.IsShared = isShared
+	domainItem.AccessRole = accessRole
+	return domainItem, nil
 }
 
-func (r *Repository) UpdateItem(ctx context.Context, userID, itemID string, input UpdateItemInput) (Item, error) {
+func (r *Repository) UpdateItem(ctx context.Context, userID, userEmail, itemID string, input UpdateItemInput) (Item, error) {
 	setter := &models.ItemSetter{
 		DeviceID:          omit.From(input.DeviceID),
 		LastSyncedVersion: omit.From(input.LastSyncedVersion),
@@ -146,11 +194,19 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, itemID string, inpu
 		setter.IsFavorite = omit.From(*input.IsFavorite)
 	}
 
+	// Update only if owner OR has active full_access share
+	where := psql.And(
+		models.ItemColumns.ID.EQ(psql.Arg(itemID)),
+		psql.Or(
+			models.ItemColumns.UserID.EQ(psql.Arg(userID)),
+			psql.Raw("id IN (SELECT note_id FROM note_shares WHERE email = ? AND access_role = 'full_access' AND status = 'active')", userEmail),
+		),
+	)
+
 	_, err := psql.Update(
 		um.Table(models.TableNames.Items),
 		setter,
-		um.Where(models.ItemColumns.ID.EQ(psql.Arg(itemID))),
-		um.Where(models.ItemColumns.UserID.EQ(psql.Arg(userID))),
+		um.Where(where),
 		um.Set(psql.Raw("version = version + 1")),
 	).Exec(ctx, r.DB)
 
@@ -158,7 +214,7 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, itemID string, inpu
 		return Item{}, err
 	}
 
-	return r.GetItem(ctx, userID, itemID)
+	return r.GetItem(ctx, userID, userEmail, itemID)
 }
 
 func (r *Repository) FolderHasDescendant(ctx context.Context, userID, folderID, candidateID string) (bool, error) {

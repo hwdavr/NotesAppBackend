@@ -22,7 +22,10 @@ type Item struct {
 	CreatedAt         time.Time  `db:"created_at" json:"createdAt"`
 	UpdatedAt         time.Time  `db:"updated_at" json:"updatedAt"`
 	IsFavorite        bool       `db:"is_favorite" json:"isFavorite"`
+	IsShared          bool       `db:"is_shared" json:"isShared"`
+	AccessRole        string     `db:"access_role" json:"accessRole"`
 }
+
 
 type CreateItemInput struct {
 	ID       string

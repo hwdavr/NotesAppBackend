@@ -545,6 +545,8 @@ components:
         - createdAt
         - updatedAt
         - isFavorite
+        - isShared
+        - accessRole
       properties:
         id:
           type: string
@@ -597,6 +599,13 @@ components:
         isFavorite:
           type: boolean
           example: false
+        isShared:
+          type: boolean
+          description: True if the item is shared with the current user (the user is not the owner)
+          example: false
+        accessRole:
+          $ref: "#/components/schemas/AccessRole"
+          description: The access role of the current user for this item
 
     MutationResult:
       type: object

@@ -24,7 +24,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := h.Svc.ListItems(r.Context(), userIDFromContext(r), filter)
+	items, err := h.Svc.ListItems(r.Context(), userIDFromContext(r), userEmailFromContext(r), filter)
 	if err != nil {
 		h.writeDomainError(w, err)
 		return
@@ -35,7 +35,7 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ItemsHandler) Get(w http.ResponseWriter, r *http.Request) {
-	item, err := h.Svc.GetItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"))
+	item, err := h.Svc.GetItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"))
 	if err != nil {
 		h.writeDomainError(w, err)
 		return
@@ -118,7 +118,7 @@ func (h *ItemsHandler) Rename(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.Svc.RenameItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.Name, req.DeviceID, req.LastSyncedVersion)
+	result, err := h.Svc.RenameItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.Name, req.DeviceID, req.LastSyncedVersion)
 	h.writeMutationResult(w, result, err)
 }
 
@@ -133,7 +133,7 @@ func (h *ItemsHandler) Move(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.Svc.MoveItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.ParentID, req.LastSyncedVersion)
+	result, err := h.Svc.MoveItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.ParentID, req.LastSyncedVersion)
 	h.writeMutationResult(w, result, err)
 }
 
@@ -148,7 +148,7 @@ func (h *ItemsHandler) Reorder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.Svc.ReorderItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.SortKey, req.DeviceID, req.LastSyncedVersion)
+	result, err := h.Svc.ReorderItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.SortKey, req.DeviceID, req.LastSyncedVersion)
 	h.writeMutationResult(w, result, err)
 }
 
@@ -163,7 +163,7 @@ func (h *ItemsHandler) UpdateNoteContent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	result, err := h.Svc.UpdateNoteContent(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.Content, req.DeviceID, req.LastSyncedVersion)
+	result, err := h.Svc.UpdateNoteContent(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.Content, req.DeviceID, req.LastSyncedVersion)
 	h.writeMutationResult(w, result, err)
 }
 
@@ -177,7 +177,7 @@ func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.Svc.DeleteItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.LastSyncedVersion)
+	result, err := h.Svc.DeleteItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.LastSyncedVersion)
 	h.writeMutationResult(w, result, err)
 }
 
@@ -192,7 +192,7 @@ func (h *ItemsHandler) Favorite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.Svc.FavoriteItem(r.Context(), userIDFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.IsFavorite, req.LastSyncedVersion)
+	result, err := h.Svc.FavoriteItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.DeviceID, req.IsFavorite, req.LastSyncedVersion)
 	h.writeMutationResult(w, result, err)
 }
 
@@ -243,6 +243,11 @@ func userIDFromContext(r *http.Request) string {
 	val := r.Context().Value(userctx.UserIDKey)
 	userID, _ := val.(string)
 	return userID
+}
+func userEmailFromContext(r *http.Request) string {
+	val := r.Context().Value(userctx.UserEmailKey)
+	email, _ := val.(string)
+	return email
 }
 
 func (h *ItemsHandler) writeMutationResult(w http.ResponseWriter, result domain.MutationResult, err error) {

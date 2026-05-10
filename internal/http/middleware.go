@@ -89,7 +89,13 @@ func AuthMiddleware(cfg AuthConfig) func(http.Handler) http.Handler {
 				return
 			}
 
+			email, _ := claims["email"].(string)
+			if email == "" {
+				// Fallback to custom claim if standard email is missing
+				email, _ = claims["https://notes-app.api/email"].(string)
+			}
 			ctx := context.WithValue(r.Context(), userctx.UserIDKey, uid)
+			ctx = context.WithValue(ctx, userctx.UserEmailKey, email)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

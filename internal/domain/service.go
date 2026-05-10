@@ -15,6 +15,7 @@ var (
 	ErrSyncConflict = errors.New("sync conflict")
 	ErrInvalidMove  = errors.New("invalid move")
 	ErrConflict     = errors.New("conflict")
+	ErrUnauthorized = errors.New("unauthorized")
 )
 
 type Service struct {
@@ -55,24 +56,28 @@ func (s *Service) CreateNote(ctx context.Context, userID string, input CreateIte
 	return s.Repo.CreateItem(ctx, userID, input)
 }
 
-func (s *Service) ListItems(ctx context.Context, userID string, filter ListItemsFilter) ([]Item, error) {
-	return s.Repo.ListItems(ctx, userID, filter)
+func (s *Service) ListItems(ctx context.Context, userID, userEmail string, filter ListItemsFilter) ([]Item, error) {
+	return s.Repo.ListItems(ctx, userID, userEmail, filter)
 }
 
-func (s *Service) GetItem(ctx context.Context, userID, itemID string) (Item, error) {
-	return s.Repo.GetItem(ctx, userID, itemID)
+func (s *Service) GetItem(ctx context.Context, userID, userEmail, itemID string) (Item, error) {
+	return s.Repo.GetItem(ctx, userID, userEmail, itemID)
 }
 
-func (s *Service) RenameItem(ctx context.Context, userID, itemID, name, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
+func (s *Service) RenameItem(ctx context.Context, userID, userEmail, itemID, name, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
 	name = strings.TrimSpace(name)
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || name == "" || deviceID == "" {
 		return MutationResult{}, ErrInvalidItem
 	}
 
-	current, err := s.Repo.GetItem(ctx, userID, itemID)
+	current, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
 	if err != nil {
 		return MutationResult{}, err
+	}
+
+	if current.AccessRole != AccessRoleFullAccess {
+		return MutationResult{}, ErrUnauthorized
 	}
 
 	update := UpdateItemInput{
@@ -83,7 +88,7 @@ func (s *Service) RenameItem(ctx context.Context, userID, itemID, name, deviceID
 		update.Name = &name
 	}
 
-	item, err := s.Repo.UpdateItem(ctx, userID, itemID, update)
+	item, err := s.Repo.UpdateItem(ctx, userID, userEmail, itemID, update)
 	if err != nil {
 		return MutationResult{}, err
 	}
@@ -99,18 +104,22 @@ func (s *Service) RenameItem(ctx context.Context, userID, itemID, name, deviceID
 	return MutationResult{Status: "merged", Item: item}, nil
 }
 
-func (s *Service) UpdateNoteContent(ctx context.Context, userID, itemID, content, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
+func (s *Service) UpdateNoteContent(ctx context.Context, userID, userEmail, itemID, content, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || deviceID == "" {
 		return MutationResult{}, ErrInvalidItem
 	}
 
-	current, err := s.Repo.GetItem(ctx, userID, itemID)
+	current, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
 	if err != nil {
 		return MutationResult{}, err
 	}
 	if current.Type != ItemTypeNote {
 		return MutationResult{}, ErrInvalidItem
+	}
+
+	if current.AccessRole != AccessRoleFullAccess {
+		return MutationResult{}, ErrUnauthorized
 	}
 
 	update := UpdateItemInput{
@@ -121,7 +130,7 @@ func (s *Service) UpdateNoteContent(ctx context.Context, userID, itemID, content
 		update.Content = &content
 	}
 
-	item, err := s.Repo.UpdateItem(ctx, userID, itemID, update)
+	item, err := s.Repo.UpdateItem(ctx, userID, userEmail, itemID, update)
 	if err != nil {
 		return MutationResult{}, err
 	}
@@ -137,13 +146,13 @@ func (s *Service) UpdateNoteContent(ctx context.Context, userID, itemID, content
 	return MutationResult{Status: "merged", Item: item}, nil
 }
 
-func (s *Service) MoveItem(ctx context.Context, userID, itemID, deviceID string, parentID *string, lastSyncedVersion int64) (MutationResult, error) {
+func (s *Service) MoveItem(ctx context.Context, userID, userEmail, itemID, deviceID string, parentID *string, lastSyncedVersion int64) (MutationResult, error) {
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || deviceID == "" {
 		return MutationResult{}, ErrInvalidItem
 	}
 
-	current, err := s.Repo.GetItem(ctx, userID, itemID)
+	current, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
 	if err != nil {
 		return MutationResult{}, err
 	}
@@ -170,7 +179,11 @@ func (s *Service) MoveItem(ctx context.Context, userID, itemID, deviceID string,
 		}
 	}
 
-	item, err := s.Repo.UpdateItem(ctx, userID, itemID, UpdateItemInput{
+	if current.AccessRole != AccessRoleFullAccess {
+		return MutationResult{}, ErrUnauthorized
+	}
+
+	item, err := s.Repo.UpdateItem(ctx, userID, userEmail, itemID, UpdateItemInput{
 		ParentID:          parentID,
 		ClearParentID:     parentID == nil,
 		DeviceID:          deviceID,
@@ -191,7 +204,7 @@ func (s *Service) validateParent(ctx context.Context, userID, itemID string, par
 		return ErrInvalidMove
 	}
 
-	parent, err := s.Repo.GetItem(ctx, userID, *parentID)
+	parent, err := s.Repo.GetItem(ctx, userID, "", *parentID)
 	if err != nil {
 		return err
 	}
@@ -201,14 +214,22 @@ func (s *Service) validateParent(ctx context.Context, userID, itemID string, par
 	return nil
 }
 
-func (s *Service) ReorderItem(ctx context.Context, userID, itemID, sortKey, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
+func (s *Service) ReorderItem(ctx context.Context, userID, userEmail, itemID, sortKey, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
 	sortKey = strings.TrimSpace(sortKey)
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || sortKey == "" || deviceID == "" {
 		return MutationResult{}, ErrInvalidItem
 	}
 
-	item, err := s.Repo.UpdateItem(ctx, userID, itemID, UpdateItemInput{
+	current, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
+	if err != nil {
+		return MutationResult{}, err
+	}
+	if current.AccessRole != AccessRoleFullAccess {
+		return MutationResult{}, ErrUnauthorized
+	}
+
+	item, err := s.Repo.UpdateItem(ctx, userID, userEmail, itemID, UpdateItemInput{
 		SortKey:           &sortKey,
 		DeviceID:          deviceID,
 		LastSyncedVersion: lastSyncedVersion,
@@ -220,7 +241,7 @@ func (s *Service) ReorderItem(ctx context.Context, userID, itemID, sortKey, devi
 	return MutationResult{Status: "merged", Item: item}, nil
 }
 
-func (s *Service) DeleteItem(ctx context.Context, userID, itemID, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
+func (s *Service) DeleteItem(ctx context.Context, userID, userEmail, itemID, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || deviceID == "" {
 		return MutationResult{}, ErrInvalidItem
@@ -231,7 +252,7 @@ func (s *Service) DeleteItem(ctx context.Context, userID, itemID, deviceID strin
 		return MutationResult{}, err
 	}
 
-	item, err := s.Repo.GetItem(ctx, userID, itemID)
+	item, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
 	if err != nil {
 		return MutationResult{}, err
 	}
@@ -239,15 +260,19 @@ func (s *Service) DeleteItem(ctx context.Context, userID, itemID, deviceID strin
 	return MutationResult{Status: "merged", Item: item}, nil
 }
 
-func (s *Service) FavoriteItem(ctx context.Context, userID, itemID, deviceID string, isFavorite bool, lastSyncedVersion int64) (MutationResult, error) {
+func (s *Service) FavoriteItem(ctx context.Context, userID, userEmail, itemID, deviceID string, isFavorite bool, lastSyncedVersion int64) (MutationResult, error) {
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || deviceID == "" {
 		return MutationResult{}, ErrInvalidItem
 	}
 
-	current, err := s.Repo.GetItem(ctx, userID, itemID)
+	current, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
 	if err != nil {
 		return MutationResult{}, err
+	}
+
+	if current.AccessRole != AccessRoleFullAccess {
+		return MutationResult{}, ErrUnauthorized
 	}
 
 	update := UpdateItemInput{
@@ -258,7 +283,7 @@ func (s *Service) FavoriteItem(ctx context.Context, userID, itemID, deviceID str
 		update.IsFavorite = &isFavorite
 	}
 
-	item, err := s.Repo.UpdateItem(ctx, userID, itemID, update)
+	item, err := s.Repo.UpdateItem(ctx, userID, userEmail, itemID, update)
 	if err != nil {
 		return MutationResult{}, err
 	}
@@ -276,7 +301,7 @@ func (s *Service) FavoriteItem(ctx context.Context, userID, itemID, deviceID str
 
 func (s *Service) ListNoteShares(ctx context.Context, userID, noteID string) ([]NoteShare, error) {
 	// Verify user has access to the note
-	_, err := s.Repo.GetItem(ctx, userID, noteID)
+	_, err := s.Repo.GetItem(ctx, userID, "", noteID)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +316,7 @@ func (s *Service) CreateNoteShare(ctx context.Context, userID, noteID string, in
 	}
 
 	// Verify user is the owner of the note
-	note, err := s.Repo.GetItem(ctx, userID, noteID)
+	note, err := s.Repo.GetItem(ctx, userID, "", noteID)
 	if err != nil {
 		return NoteShare{}, err
 	}
@@ -326,7 +351,7 @@ func (s *Service) UpdateNoteShare(ctx context.Context, userID, noteID, shareID s
 	}
 
 	// Verify user is the owner of the note
-	note, err := s.Repo.GetItem(ctx, userID, noteID)
+	note, err := s.Repo.GetItem(ctx, userID, "", noteID)
 	if err != nil {
 		return NoteShare{}, err
 	}
@@ -339,7 +364,7 @@ func (s *Service) UpdateNoteShare(ctx context.Context, userID, noteID, shareID s
 
 func (s *Service) DeleteNoteShare(ctx context.Context, userID, noteID, shareID string) error {
 	// Verify user is the owner of the note
-	note, err := s.Repo.GetItem(ctx, userID, noteID)
+	note, err := s.Repo.GetItem(ctx, userID, "", noteID)
 	if err != nil {
 		return err
 	}
