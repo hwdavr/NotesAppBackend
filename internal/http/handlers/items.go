@@ -34,6 +34,19 @@ func (h *ItemsHandler) List(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(items)
 }
 
+func (h *ItemsHandler) DebugMe(w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		UserID string `json:"userId"`
+		Email  string `json:"email"`
+	}{
+		UserID: userIDFromContext(r),
+		Email:  userEmailFromContext(r),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(data)
+}
+
 func (h *ItemsHandler) Get(w http.ResponseWriter, r *http.Request) {
 	item, err := h.Svc.GetItem(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"))
 	if err != nil {

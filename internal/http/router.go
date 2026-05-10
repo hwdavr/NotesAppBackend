@@ -32,6 +32,7 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, cfg config
 		}))
 		pr.Route("/v1", func(api chi.Router) {
 			api.Get("/items", ih.List)
+			api.Get("/debug/me", ih.DebugMe)
 			api.Get("/items/{itemID}", ih.Get)
 			api.Post("/folders", ih.CreateFolder)
 			api.Post("/notes", ih.CreateNote)
