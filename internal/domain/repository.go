@@ -50,15 +50,35 @@ func (r *Repository) CreateItem(ctx context.Context, userID string, input Create
 }
 
 func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, filter ListItemsFilter) ([]Item, error) {
-	// We use a raw query here to easily handle the join and the COALESCE for access_role
 	query := `
-		SELECT 
+		WITH RECURSIVE accessible AS (
+			-- Direct access (owned or shared)
+			SELECT i.id, i.user_id, i.parent_id, 
+			       COALESCE(ns.access_role, 'full_access') as access_role,
+			       (i.user_id != $1) as is_shared,
+			       (i.parent_id IS NULL) as is_effective_root
+			FROM items i
+			LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
+			WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
+			
+			UNION ALL
+			
+			-- Inherited access
+			SELECT i.id, i.user_id, i.parent_id, 
+			       a.access_role,
+			       true as is_shared,
+			       false as is_effective_root
+			FROM items i
+			JOIN accessible a ON i.parent_id = a.id
+			WHERE i.user_id != $1
+		)
+		SELECT DISTINCT ON (i.parent_id, i.sort_key, i.id)
 			i.*, 
-			COALESCE(ns.access_role, 'full_access') as current_access_role,
-			(i.user_id != $1) as is_shared_item
+			a.access_role,
+			a.is_shared
 		FROM items i
-		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
-		WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
+		JOIN accessible a ON i.id = a.id
+		WHERE 1=1
 	`
 	args := []any{userID, userEmail}
 
@@ -72,7 +92,7 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 		query += " AND i.parent_id = $" + strconv.Itoa(len(args)+1)
 		args = append(args, *filter.ParentID)
 	} else if filter.RootOnly {
-		query += " AND i.parent_id IS NULL"
+		query += " AND a.is_effective_root = TRUE"
 	}
 
 	if !filter.IncludeDeleted {
@@ -126,13 +146,31 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 
 func (r *Repository) GetItem(ctx context.Context, userID, userEmail, itemID string) (Item, error) {
 	query := `
+		WITH RECURSIVE accessible AS (
+			SELECT i.id, i.user_id, i.parent_id, 
+			       COALESCE(ns.access_role, 'full_access') as access_role,
+			       (i.user_id != $1) as is_shared
+			FROM items i
+			LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
+			WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
+			
+			UNION ALL
+			
+			SELECT i.id, i.user_id, i.parent_id, 
+			       a.access_role,
+			       true as is_shared
+			FROM items i
+			JOIN accessible a ON i.parent_id = a.id
+			WHERE i.user_id != $1
+		)
 		SELECT 
 			i.*, 
-			COALESCE(ns.access_role, 'full_access') as current_access_role,
-			(i.user_id != $1) as is_shared_item
+			a.access_role,
+			a.is_shared
 		FROM items i
-		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
-		WHERE i.id = $3 AND (i.user_id = $1 OR ns.id IS NOT NULL)
+		JOIN accessible a ON i.id = a.id
+		WHERE i.id = $3
+		LIMIT 1
 	`
 	rows, err := r.DB.QueryContext(ctx, query, userID, userEmail, itemID)
 	if err != nil {
@@ -199,7 +237,16 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, userEmail, itemID s
 		models.ItemColumns.ID.EQ(psql.Arg(itemID)),
 		psql.Or(
 			models.ItemColumns.UserID.EQ(psql.Arg(userID)),
-			psql.Raw("id IN (SELECT note_id FROM note_shares WHERE email = ? AND access_role = 'full_access' AND status IN ('active', 'pending'))", userEmail),
+			psql.Raw(`id IN (
+				WITH RECURSIVE full_access_items AS (
+					SELECT note_id as id FROM note_shares 
+					WHERE email = ? AND access_role = 'full_access' AND status IN ('active', 'pending')
+					UNION ALL
+					SELECT i.id FROM items i
+					JOIN full_access_items fai ON i.parent_id = fai.id
+				)
+				SELECT id FROM full_access_items
+			)`, userEmail),
 		),
 	)
 
