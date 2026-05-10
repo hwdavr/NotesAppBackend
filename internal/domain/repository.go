@@ -72,12 +72,16 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 			JOIN accessible a ON i.parent_id = a.id
 			WHERE i.user_id != $1
 		)
-		SELECT DISTINCT ON (i.parent_id, i.sort_key, i.id)
-			i.*, 
-			a.access_role,
-			a.is_shared
-		FROM items i
-		JOIN accessible a ON i.id = a.id
+		SELECT * FROM (
+			SELECT DISTINCT ON (i.id)
+				i.*, 
+				a.access_role,
+				a.is_shared,
+				a.is_effective_root
+			FROM items i
+			JOIN accessible a ON i.id = a.id
+			ORDER BY i.id, a.access_role DESC -- full_access before read_only
+		) i
 		WHERE 1=1
 	`
 	args := []any{userID, userEmail}
@@ -92,7 +96,7 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 		query += " AND i.parent_id = $" + strconv.Itoa(len(args)+1)
 		args = append(args, *filter.ParentID)
 	} else if filter.RootOnly {
-		query += " AND a.is_effective_root = TRUE"
+		query += " AND i.is_effective_root = TRUE"
 	}
 
 	if !filter.IncludeDeleted {
@@ -170,6 +174,7 @@ func (r *Repository) GetItem(ctx context.Context, userID, userEmail, itemID stri
 		FROM items i
 		JOIN accessible a ON i.id = a.id
 		WHERE i.id = $3
+		ORDER BY a.access_role DESC -- full_access before read_only
 		LIMIT 1
 	`
 	rows, err := r.DB.QueryContext(ctx, query, userID, userEmail, itemID)
