@@ -65,7 +65,7 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 			         ))
 			       ) as is_effective_root
 			FROM items i
-			LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
+			LEFT JOIN note_shares ns ON i.id = ns.note_id AND LOWER(TRIM(ns.email)) = $2 AND ns.status IN ('active', 'pending')
 			WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
 			
 			UNION ALL
@@ -161,7 +161,7 @@ func (r *Repository) GetItem(ctx context.Context, userID, userEmail, itemID stri
 			       COALESCE(ns.access_role, 'full_access') as access_role,
 			       (i.user_id != $1) as is_shared
 			FROM items i
-			LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
+			LEFT JOIN note_shares ns ON i.id = ns.note_id AND LOWER(TRIM(ns.email)) = $2 AND ns.status IN ('active', 'pending')
 			WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
 			
 			UNION ALL
