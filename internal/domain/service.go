@@ -27,7 +27,7 @@ func NewService(r *Repository, e email.Service) *Service {
 	return &Service{Repo: r, Email: e}
 }
 
-func (s *Service) CreateFolder(ctx context.Context, userID string, input CreateItemInput) (Item, error) {
+func (s *Service) CreateFolder(ctx context.Context, userID, userEmail string, input CreateItemInput) (Item, error) {
 	input.Type = ItemTypeFolder
 	input.Name = strings.TrimSpace(input.Name)
 	input.Content = ""
@@ -36,13 +36,13 @@ func (s *Service) CreateFolder(ctx context.Context, userID string, input CreateI
 	if userID == "" || input.Name == "" || input.SortKey == "" || input.DeviceID == "" {
 		return Item{}, ErrInvalidItem
 	}
-	if err := s.validateParent(ctx, userID, "", input.ParentID); err != nil {
+	if err := s.validateParent(ctx, userID, userEmail, "", input.ParentID); err != nil {
 		return Item{}, err
 	}
 	return s.Repo.CreateItem(ctx, userID, input)
 }
 
-func (s *Service) CreateNote(ctx context.Context, userID string, input CreateItemInput) (Item, error) {
+func (s *Service) CreateNote(ctx context.Context, userID, userEmail string, input CreateItemInput) (Item, error) {
 	input.Type = ItemTypeNote
 	input.Name = strings.TrimSpace(input.Name)
 	input.SortKey = strings.TrimSpace(input.SortKey)
@@ -50,7 +50,7 @@ func (s *Service) CreateNote(ctx context.Context, userID string, input CreateIte
 	if userID == "" || input.Name == "" || input.SortKey == "" || input.DeviceID == "" {
 		return Item{}, ErrInvalidItem
 	}
-	if err := s.validateParent(ctx, userID, "", input.ParentID); err != nil {
+	if err := s.validateParent(ctx, userID, userEmail, "", input.ParentID); err != nil {
 		return Item{}, err
 	}
 	return s.Repo.CreateItem(ctx, userID, input)
@@ -165,7 +165,7 @@ func (s *Service) MoveItem(ctx context.Context, userID, userEmail, itemID, devic
 			parentID = &trimmed
 		}
 	}
-	if err := s.validateParent(ctx, userID, itemID, parentID); err != nil {
+	if err := s.validateParent(ctx, userID, userEmail, itemID, parentID); err != nil {
 		return MutationResult{}, err
 	}
 
@@ -196,7 +196,7 @@ func (s *Service) MoveItem(ctx context.Context, userID, userEmail, itemID, devic
 	return MutationResult{Status: "merged", Item: item}, nil
 }
 
-func (s *Service) validateParent(ctx context.Context, userID, itemID string, parentID *string) error {
+func (s *Service) validateParent(ctx context.Context, userID, userEmail, itemID string, parentID *string) error {
 	if parentID == nil {
 		return nil
 	}
@@ -204,7 +204,7 @@ func (s *Service) validateParent(ctx context.Context, userID, itemID string, par
 		return ErrInvalidMove
 	}
 
-	parent, err := s.Repo.GetItem(ctx, userID, "", *parentID)
+	parent, err := s.Repo.GetItem(ctx, userID, userEmail, *parentID)
 	if err != nil {
 		return err
 	}

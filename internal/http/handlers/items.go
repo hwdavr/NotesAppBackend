@@ -58,7 +58,7 @@ func (h *ItemsHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.Svc.CreateFolder(r.Context(), userIDFromContext(r), domain.CreateItemInput{
+	item, err := h.Svc.CreateFolder(r.Context(), userIDFromContext(r), userEmailFromContext(r), domain.CreateItemInput{
 		ID:       req.ID,
 		ParentID: req.ParentID,
 		Name:     req.Name,
@@ -89,7 +89,7 @@ func (h *ItemsHandler) CreateNote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := h.Svc.CreateNote(r.Context(), userIDFromContext(r), domain.CreateItemInput{
+	item, err := h.Svc.CreateNote(r.Context(), userIDFromContext(r), userEmailFromContext(r), domain.CreateItemInput{
 		ID:       req.ID,
 		ParentID: req.ParentID,
 		Name:     req.Name,
