@@ -55,7 +55,7 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 			-- Direct access (owned or shared)
 			SELECT i.id, i.user_id, i.parent_id, 
 			       COALESCE(ns.access_role, 'full_access') as access_role,
-			       (i.user_id != $1 OR EXISTS (SELECT 1 FROM note_shares ns_check WHERE ns_check.note_id = i.id AND ns_check.status IN ('active', 'pending'))) as is_shared,
+			       (i.user_id != $1) as is_shared,
 			       (
 			         (i.user_id = $1 AND i.parent_id IS NULL)
 			         OR
@@ -159,7 +159,7 @@ func (r *Repository) GetItem(ctx context.Context, userID, userEmail, itemID stri
 		WITH RECURSIVE accessible AS (
 			SELECT i.id, i.user_id, i.parent_id, 
 			       COALESCE(ns.access_role, 'full_access') as access_role,
-			       (i.user_id != $1 OR EXISTS (SELECT 1 FROM note_shares ns_check WHERE ns_check.note_id = i.id AND ns_check.status IN ('active', 'pending'))) as is_shared
+			       (i.user_id != $1) as is_shared
 			FROM items i
 			LEFT JOIN note_shares ns ON i.id = ns.note_id AND LOWER(TRIM(ns.email)) = $2 AND ns.status IN ('active', 'pending')
 			WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
