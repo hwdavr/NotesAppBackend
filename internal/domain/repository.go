@@ -57,7 +57,7 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 			COALESCE(ns.access_role, 'full_access') as current_access_role,
 			(i.user_id != $1) as is_shared_item
 		FROM items i
-		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status = 'active'
+		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
 		WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
 	`
 	args := []any{userID, userEmail}
@@ -131,7 +131,7 @@ func (r *Repository) GetItem(ctx context.Context, userID, userEmail, itemID stri
 			COALESCE(ns.access_role, 'full_access') as current_access_role,
 			(i.user_id != $1) as is_shared_item
 		FROM items i
-		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status = 'active'
+		LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
 		WHERE i.id = $3 AND (i.user_id = $1 OR ns.id IS NOT NULL)
 	`
 	rows, err := r.DB.QueryContext(ctx, query, userID, userEmail, itemID)
@@ -199,7 +199,7 @@ func (r *Repository) UpdateItem(ctx context.Context, userID, userEmail, itemID s
 		models.ItemColumns.ID.EQ(psql.Arg(itemID)),
 		psql.Or(
 			models.ItemColumns.UserID.EQ(psql.Arg(userID)),
-			psql.Raw("id IN (SELECT note_id FROM note_shares WHERE email = ? AND access_role = 'full_access' AND status = 'active')", userEmail),
+			psql.Raw("id IN (SELECT note_id FROM note_shares WHERE email = ? AND access_role = 'full_access' AND status IN ('active', 'pending'))", userEmail),
 		),
 	)
 

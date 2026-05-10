@@ -87,6 +87,8 @@ func (h *SharesHandler) writeDomainError(w http.ResponseWriter, err error) {
 		status = http.StatusNotFound
 	} else if err == domain.ErrConflict {
 		status = http.StatusConflict
+	} else if err == domain.ErrUnauthorized {
+		status = http.StatusForbidden
 	}
 
 	if status == http.StatusInternalServerError {

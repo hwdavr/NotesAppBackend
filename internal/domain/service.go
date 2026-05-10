@@ -331,7 +331,7 @@ func (s *Service) CreateNoteShare(ctx context.Context, userID, noteID string, in
 		return NoteShare{}, ErrConflict
 	}
 
-	share, err := s.Repo.CreateNoteShare(ctx, noteID, input.Email, input.AccessRole, ShareStatusPending, userID)
+	share, err := s.Repo.CreateNoteShare(ctx, noteID, input.Email, input.AccessRole, ShareStatusActive, userID)
 	if err != nil {
 		return NoteShare{}, err
 	}

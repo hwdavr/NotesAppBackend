@@ -276,6 +276,8 @@ func (h *ItemsHandler) writeDomainError(w http.ResponseWriter, err error) {
 		status = http.StatusConflict
 	case errors.Is(err, domain.ErrInvalidMove):
 		status = http.StatusConflict
+	case errors.Is(err, domain.ErrUnauthorized):
+		status = http.StatusForbidden
 	}
 
 	if status == http.StatusInternalServerError {
