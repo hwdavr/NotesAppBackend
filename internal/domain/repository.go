@@ -56,7 +56,14 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 			SELECT i.id, i.user_id, i.parent_id, 
 			       COALESCE(ns.access_role, 'full_access') as access_role,
 			       (i.user_id != $1) as is_shared,
-			       (i.parent_id IS NULL) as is_effective_root
+			       (
+			         (i.user_id = $1 AND i.parent_id IS NULL)
+			         OR
+			         (i.user_id != $1 AND ns.id IS NOT NULL AND NOT EXISTS (
+			             SELECT 1 FROM note_shares ns2 
+			             WHERE ns2.note_id = i.parent_id AND ns2.email = $2 AND ns2.status IN ('active', 'pending')
+			         ))
+			       ) as is_effective_root
 			FROM items i
 			LEFT JOIN note_shares ns ON i.id = ns.note_id AND ns.email = $2 AND ns.status IN ('active', 'pending')
 			WHERE (i.user_id = $1 OR ns.id IS NOT NULL)
