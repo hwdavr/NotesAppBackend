@@ -127,14 +127,13 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 		var m models.Item
 		var accessRole string
 		var isShared bool
+		var isEffectiveRoot bool
 		
 		// Scan all columns from models.Item plus our extra columns
-		// Since we use SELECT i.*, we need to be careful.
-		// It's safer to use Bob's scanning if possible, but for raw queries:
 		err := rows.Scan(
 			&m.ID, &m.UserID, &m.Type, &m.ParentID, &m.Name, &m.Content, &m.SortKey,
 			&m.Version, &m.DeviceID, &m.LastSyncedVersion, &m.DeletedAt, &m.CreatedAt, &m.UpdatedAt, &m.IsFavorite,
-			&accessRole, &isShared,
+			&accessRole, &isShared, &isEffectiveRoot,
 		)
 		if err != nil {
 			return nil, err
