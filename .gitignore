@@ -1,0 +1,18 @@
+# Binaries
+app
+build/app
+
+# Environment variables
+.env
+.env.local
+build/.env.local
+
+# Go
+vendor/
+*.exe
+*.test
+*.out
+
+# IDEs
+.idea/
+.vscode/

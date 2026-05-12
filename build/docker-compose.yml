@@ -21,15 +21,10 @@ services:
     build:
       context: ..
       dockerfile: build/Dockerfile
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "8080:8080"
     env_file:
       - .env.local
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/notes_app?sslmode=disable
 
 volumes:
   db_data:
