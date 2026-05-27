@@ -26,7 +26,6 @@ type Item struct {
 	AccessRole        string     `db:"access_role" json:"accessRole"`
 }
 
-
 type CreateItemInput struct {
 	ID       string
 	Type     string
@@ -94,4 +93,21 @@ type CreateNoteShareRequest struct {
 
 type UpdateNoteShareRequest struct {
 	AccessRole string `json:"accessRole"`
+}
+
+// NoteBlockComment is a comment left on a specific text block within a note.
+type NoteBlockComment struct {
+	ID                string    `db:"id" json:"id"`
+	NoteID            string    `db:"note_id" json:"noteId"`
+	BlockID           string    `db:"block_id" json:"blockId"`
+	AuthorUserID      string    `db:"author_user_id" json:"authorUserId"`
+	AuthorDisplayName *string   `db:"author_display_name" json:"authorDisplayName"`
+	AuthorEmail       *string   `db:"author_email" json:"authorEmail"`
+	Body              string    `db:"body" json:"body"`
+	CreatedAt         time.Time `db:"created_at" json:"createdAt"`
+	UpdatedAt         time.Time `db:"updated_at" json:"updatedAt"`
+}
+
+type CreateNoteBlockCommentRequest struct {
+	Body string `json:"body"`
 }

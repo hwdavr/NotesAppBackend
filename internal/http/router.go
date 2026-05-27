@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, cfg config.Config, log *zap.Logger) http.Handler {
+func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handlers.CommentsHandler, cfg config.Config, log *zap.Logger) http.Handler {
 	r := chi.NewRouter()
 	r.Use(Logger(log))
 	r.Use(cors.Handler(cors.Options{
@@ -31,6 +31,7 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, cfg config
 			JWKSURL:  cfg.Auth0JWKSURL,
 		}))
 		pr.Route("/v1", func(api chi.Router) {
+			// Items
 			api.Get("/items", ih.List)
 			api.Get("/debug/me", ih.DebugMe)
 			api.Get("/items/{itemID}", ih.Get)
@@ -42,10 +43,16 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, cfg config
 			api.Patch("/items/{itemID}/favorite", ih.Favorite)
 			api.Patch("/notes/{itemID}/content", ih.UpdateNoteContent)
 			api.Delete("/items/{itemID}", ih.Delete)
+
+			// Note Shares
 			api.Get("/notes/{itemID}/shares", sh.List)
 			api.Post("/notes/{itemID}/shares", sh.Create)
 			api.Patch("/notes/{itemID}/shares/{shareID}", sh.Update)
 			api.Delete("/notes/{itemID}/shares/{shareID}", sh.Delete)
+
+			// Note Block Comments
+			api.Get("/notes/{itemID}/blocks/{blockID}/comments", ch.List)
+			api.Post("/notes/{itemID}/blocks/{blockID}/comments", ch.Create)
 		})
 	})
 

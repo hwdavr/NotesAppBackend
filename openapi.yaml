@@ -408,6 +408,61 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /v1/notes/{itemID}/blocks/{blockID}/comments:
+    get:
+      tags: [Note Comments]
+      summary: List comments for a note block
+      description: Returns comments attached to one text block in a note.
+      operationId: listNoteBlockComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+        - $ref: "#/components/parameters/BlockID"
+      responses:
+        "200":
+          description: Block comments returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NoteBlockComment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      tags: [Note Comments]
+      summary: Create a comment for a note block
+      description: |
+        Creates a comment on one text block. The backend sets authorUserId from the authenticated user.
+      operationId: createNoteBlockComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+        - $ref: "#/components/parameters/BlockID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteBlockCommentRequest"
+      responses:
+        "201":
+          description: Block comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteBlockComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /v1/notes/{itemID}/shares/{shareID}:
     patch:
       tags: [Note Shares]
@@ -483,6 +538,13 @@ components:
       schema:
         type: string
       description: Note share identifier
+    BlockID:
+      in: path
+      name: blockID
+      required: true
+      schema:
+        type: string
+      description: Note document block identifier
 
   responses:
     BadRequest:
@@ -836,6 +898,61 @@ components:
           type: string
           format: date-time
           example: "2026-05-09T10:00:00Z"
+
+    NoteBlockComment:
+      type: object
+      required:
+        - id
+        - noteId
+        - blockId
+        - authorUserId
+        - body
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          example: comment_001
+        noteId:
+          type: string
+          example: note_123
+        blockId:
+          type: string
+          example: block_001
+        authorUserId:
+          type: string
+          example: auth0|commenter123
+        authorDisplayName:
+          type:
+            - string
+            - "null"
+          example: Hannah Lee
+        authorEmail:
+          type:
+            - string
+            - "null"
+          format: email
+          example: hannah@example.com
+        body:
+          type: string
+          example: Can we clarify this paragraph?
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-27T08:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-05-27T08:00:00Z"
+
+    CreateNoteBlockCommentRequest:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          example: Can we clarify this paragraph?
 
     CreateNoteShareRequest:
       type: object
