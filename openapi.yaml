@@ -350,6 +350,38 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /v1/items/{itemID}/content:
+    patch:
+      tags: [Items]
+      summary: Update item content
+      description: Updates note body for notes or folder description for folders.
+      operationId: updateItemContent
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemContentRequest"
+      responses:
+        "200":
+          description: Content update applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MutationResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
   /v1/notes/{itemID}/shares:
     get:
       tags: [Note Shares]
@@ -628,7 +660,7 @@ components:
           example: Work
         content:
           type: string
-          description: Empty string for folders
+          description: Note body for notes; folder description for folders
           example: Milk\nEggs
         sortKey:
           type: string
@@ -811,6 +843,25 @@ components:
         content:
           type: string
           example: Milk\nEggs\nBread
+        deviceId:
+          type: string
+          example: ios_abc
+        lastSyncedVersion:
+          type: integer
+          format: int64
+          example: 12
+
+    UpdateItemContentRequest:
+      type: object
+      required:
+        - content
+        - deviceId
+        - lastSyncedVersion
+      properties:
+        content:
+          type: string
+          description: Note body for notes; folder description for folders
+          example: Client receipts and invoices
         deviceId:
           type: string
           example: ios_abc

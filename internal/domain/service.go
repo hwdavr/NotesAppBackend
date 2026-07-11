@@ -146,6 +146,48 @@ func (s *Service) UpdateNoteContent(ctx context.Context, userID, userEmail, item
 	return MutationResult{Status: "merged", Item: item}, nil
 }
 
+func (s *Service) UpdateItemContent(ctx context.Context, userID, userEmail, itemID, content, deviceID string, lastSyncedVersion int64) (MutationResult, error) {
+	deviceID = strings.TrimSpace(deviceID)
+	if userID == "" || itemID == "" || deviceID == "" {
+		return MutationResult{}, ErrInvalidItem
+	}
+
+	current, err := s.Repo.GetItem(ctx, userID, userEmail, itemID)
+	if err != nil {
+		return MutationResult{}, err
+	}
+	if current.Type != ItemTypeNote && current.Type != ItemTypeFolder {
+		return MutationResult{}, ErrInvalidItem
+	}
+
+	if current.AccessRole != AccessRoleFullAccess {
+		return MutationResult{}, ErrUnauthorized
+	}
+
+	update := UpdateItemInput{
+		DeviceID:          deviceID,
+		LastSyncedVersion: lastSyncedVersion,
+	}
+	if lastSyncedVersion >= current.Version || current.Content == content {
+		update.Content = &content
+	}
+
+	item, err := s.Repo.UpdateItem(ctx, userID, userEmail, itemID, update)
+	if err != nil {
+		return MutationResult{}, err
+	}
+	if update.Content == nil {
+		return MutationResult{
+			Status:         "conflict",
+			Item:           item,
+			ConflictFields: []string{"content"},
+			Message:        "server kept newer value for: content",
+		}, ErrSyncConflict
+	}
+
+	return MutationResult{Status: "merged", Item: item}, nil
+}
+
 func (s *Service) MoveItem(ctx context.Context, userID, userEmail, itemID, deviceID string, parentID *string, lastSyncedVersion int64) (MutationResult, error) {
 	deviceID = strings.TrimSpace(deviceID)
 	if userID == "" || itemID == "" || deviceID == "" {

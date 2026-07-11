@@ -180,6 +180,21 @@ func (h *ItemsHandler) UpdateNoteContent(w http.ResponseWriter, r *http.Request)
 	h.writeMutationResult(w, result, err)
 }
 
+func (h *ItemsHandler) UpdateItemContent(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Content           string `json:"content"`
+		DeviceID          string `json:"deviceId"`
+		LastSyncedVersion int64  `json:"lastSyncedVersion"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.Svc.UpdateItemContent(r.Context(), userIDFromContext(r), userEmailFromContext(r), chi.URLParam(r, "itemID"), req.Content, req.DeviceID, req.LastSyncedVersion)
+	h.writeMutationResult(w, result, err)
+}
+
 func (h *ItemsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		DeviceID          string `json:"deviceId"`

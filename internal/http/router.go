@@ -41,6 +41,7 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handle
 			api.Patch("/items/{itemID}/move", ih.Move)
 			api.Patch("/items/{itemID}/reorder", ih.Reorder)
 			api.Patch("/items/{itemID}/favorite", ih.Favorite)
+			api.Patch("/items/{itemID}/content", ih.UpdateItemContent)
 			api.Patch("/notes/{itemID}/content", ih.UpdateNoteContent)
 			api.Delete("/items/{itemID}", ih.Delete)
 
