@@ -9,7 +9,11 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./../migrations:/docker-entrypoint-initdb.d
+      # Mount only forward migrations. Rollback files must not run during initdb.
+      - ./../migrations/0001_init.up.sql:/docker-entrypoint-initdb.d/0001_init.up.sql:ro
+      - ./../migrations/0002_add_is_favorite.up.sql:/docker-entrypoint-initdb.d/0002_add_is_favorite.up.sql:ro
+      - ./../migrations/0003_add_note_shares.up.sql:/docker-entrypoint-initdb.d/0003_add_note_shares.up.sql:ro
+      - ./../migrations/0004_add_note_block_comments.up.sql:/docker-entrypoint-initdb.d/0004_add_note_block_comments.up.sql:ro
       - db_data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d notes_app" ]
@@ -21,10 +25,15 @@ services:
     build:
       context: ..
       dockerfile: build/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8080:8080"
     env_file:
       - .env.local
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/notes_app?sslmode=disable
 
 volumes:
   db_data:

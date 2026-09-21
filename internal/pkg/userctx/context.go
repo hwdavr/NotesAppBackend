@@ -6,4 +6,3 @@ const (
 	UserIDKey    key = "userID"
 	UserEmailKey key = "userEmail"
 )
-

@@ -1,0 +1,14 @@
+{
+  "feature_id": "backend-harness",
+  "title": "Backend agent harness foundation",
+  "last_updated": "2026-09-21",
+  "features": [
+    {
+      "id": "backend-harness-bootstrap",
+      "title": "Install backend workflows and quality gates",
+      "priority": 1,
+      "status": "passing",
+      "acceptance_ids": ["HARNESS-001"]
+    }
+  ]
+}

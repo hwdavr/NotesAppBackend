@@ -1,0 +1,21 @@
+services:
+  db-test:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notes_app_test
+    ports:
+      - "55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./../migrations/0001_init.up.sql:/docker-entrypoint-initdb.d/0001_init.up.sql:ro
+      - ./../migrations/0002_add_is_favorite.up.sql:/docker-entrypoint-initdb.d/0002_add_is_favorite.up.sql:ro
+      - ./../migrations/0003_add_note_shares.up.sql:/docker-entrypoint-initdb.d/0003_add_note_shares.up.sql:ro
+      - ./../migrations/0004_add_note_block_comments.up.sql:/docker-entrypoint-initdb.d/0004_add_note_block_comments.up.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notes_app_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15

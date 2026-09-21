@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/http"
 	"net/url"
-	"math/big"
 	"strings"
 	"sync"
 	"time"
@@ -102,9 +102,9 @@ func AuthMiddleware(cfg AuthConfig) func(http.Handler) http.Handler {
 					email = nick
 				}
 			}
-			
+
 			email = strings.ToLower(strings.TrimSpace(email))
-			
+
 			if email == "" {
 				keys := make([]string, 0, len(claims))
 				for k := range claims {

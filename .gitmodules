@@ -1,0 +1,4 @@
+[submodule ".harness"]
+	path = .harness
+	url = git@github.com:hwdavr/go-agent-harness.git
+	branch = main

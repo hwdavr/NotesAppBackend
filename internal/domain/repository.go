@@ -135,7 +135,7 @@ func (r *Repository) ListItems(ctx context.Context, userID, userEmail string, fi
 		var accessRole string
 		var isShared bool
 		var isEffectiveRoot bool
-		
+
 		// Scan all columns from models.Item plus our extra columns
 		err := rows.Scan(
 			&m.ID, &m.UserID, &m.Type, &m.ParentID, &m.Name, &m.Content, &m.SortKey,

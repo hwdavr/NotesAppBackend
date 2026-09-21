@@ -10,6 +10,22 @@ This project is a Go backend for a mobile notes application. It follows the same
 - Auth0 JWT validation
 - SQL migrations
 
+## Developer Harness
+
+This repository includes a backend-adapted agent harness based on the
+NotesTakingApp workflow. Initialize its entry points and run the complete
+quality gate with:
+
+```bash
+make harness-init
+make check
+```
+
+The harness rules and workflows live under `.harness/.agents/`, templates and
+checks under `.harness/harness/`, and active delivery artifacts under
+`docs/current/`. `make test-integration` uses a disposable PostgreSQL 16
+container when Docker is available.
+
 ## Environment
 
 Required environment variables:
