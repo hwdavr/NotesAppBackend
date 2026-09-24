@@ -97,17 +97,34 @@ type UpdateNoteShareRequest struct {
 
 // NoteBlockComment is a comment left on a specific text block within a note.
 type NoteBlockComment struct {
-	ID                string    `db:"id" json:"id"`
-	NoteID            string    `db:"note_id" json:"noteId"`
-	BlockID           string    `db:"block_id" json:"blockId"`
-	AuthorUserID      string    `db:"author_user_id" json:"authorUserId"`
-	AuthorDisplayName *string   `db:"author_display_name" json:"authorDisplayName"`
-	AuthorEmail       *string   `db:"author_email" json:"authorEmail"`
-	Body              string    `db:"body" json:"body"`
-	CreatedAt         time.Time `db:"created_at" json:"createdAt"`
-	UpdatedAt         time.Time `db:"updated_at" json:"updatedAt"`
+	ID                string             `db:"id" json:"id"`
+	NoteID            string             `db:"note_id" json:"noteId"`
+	BlockID           string             `db:"block_id" json:"blockId"`
+	ParentCommentID   *string            `db:"parent_comment_id" json:"parentCommentId"`
+	AuthorUserID      string             `db:"author_user_id" json:"authorUserId"`
+	AuthorDisplayName *string            `db:"author_display_name" json:"authorDisplayName"`
+	AuthorEmail       *string            `db:"author_email" json:"authorEmail"`
+	Body              string             `db:"body" json:"body"`
+	Mentions          []MentionReference `db:"mentions" json:"mentions"`
+	CreatedAt         time.Time          `db:"created_at" json:"createdAt"`
+	UpdatedAt         time.Time          `db:"updated_at" json:"updatedAt"`
+}
+
+type MentionReference struct {
+	Kind        string `json:"kind"`
+	TargetID    string `json:"targetId"`
+	DisplayText string `json:"displayText"`
+	RangeStart  int    `json:"rangeStart"`
+	RangeLength int    `json:"rangeLength"`
 }
 
 type CreateNoteBlockCommentRequest struct {
-	Body string `json:"body"`
+	Body            string             `json:"body"`
+	ParentCommentID *string            `json:"parentCommentId"`
+	Mentions        []MentionReference `json:"mentions"`
+}
+
+type UpdateNoteBlockCommentRequest struct {
+	Body     string             `json:"body"`
+	Mentions []MentionReference `json:"mentions"`
 }

@@ -1,0 +1,140 @@
+{
+  "format_version": 1,
+  "kind": "verification_evidence",
+  "run_id": "note-block-comment-mutations-2026-09-25",
+  "result": "PASS",
+  "source": {
+    "revision": "198e5618a2d26fdd5347059a9c4666175bf73e91",
+    "working_tree_fingerprint": "working tree contained the implementation paths listed below; git diff --check passed",
+    "artifact": "docs/product/2026-09-25-note-block-comment-mutations/verification_evidence_v1.json"
+  },
+  "plan": "docs/product/2026-09-25-note-block-comment-mutations/test_plan_v1.md",
+  "selection": {
+    "changed_paths": [
+      "build/docker-compose.yml",
+      "build/docker-compose.test.yml",
+      "internal/domain/comments_repository.go",
+      "internal/domain/comments_service.go",
+      "internal/domain/comments_integration_test.go",
+      "internal/domain/comments_test.go",
+      "internal/domain/models.go",
+      "internal/http/comments_e2e_integration_test.go",
+      "internal/http/handlers/comments.go",
+      "internal/http/handlers/comments_test.go",
+      "internal/http/router.go",
+      "migrations/0005_add_note_block_comment_metadata.up.sql",
+      "migrations/0005_add_note_block_comment_metadata.down.sql"
+    ],
+    "packages": ["./internal/domain", "./internal/http", "./internal/http/handlers"],
+    "dependent_packages": ["./..."],
+    "scenario_ids": ["TC-STATIC-001", "TC-UNIT-001", "TC-API-001", "TC-API-002", "TC-CONTRACT-001", "TC-DB-001", "TC-REG-001"],
+    "reason": "Changed comment persistence, domain authorization/validation, HTTP routing/handlers, migrations, Compose bootstrap, and focused tests."
+  },
+  "environment": {
+    "identity": "Docker Compose disposable PostgreSQL 16 service build-db-test-1 on localhost:55432",
+    "real_dependencies": ["PostgreSQL 16", "in-process JWKS HTTP server"],
+    "mocked_boundaries": ["existing mock email service; email behavior is out of scope"],
+    "cleanup_result": "PASS: make integration-db-down removed build-db-test-1 and its test network"
+  },
+  "gates": [
+    {
+      "id": "static",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {"id": "static-build", "command_argv": ["go", "build", "./..."], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+        {"id": "static-vet", "command_argv": ["go", "vet", "./..."], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+        {"id": "static-rules", "command_argv": ["bash", "harness/scripts/check-go-rules.sh"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+        {"id": "static-migrations", "command_argv": ["bash", "harness/scripts/check-migrations.sh"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+        {"id": "static-openapi", "command_argv": ["bash", "harness/scripts/check-openapi.sh"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null}
+      ]
+    },
+    {
+      "id": "unit",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {"id": "unit-focused", "command_argv": ["go", "test", "-json", "-count=1", "./internal/domain", "./internal/http/handlers", "-run", "Test(Comment|NoteBlockComment)"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": 7, "skipped_test_count": 0, "cached": false, "artifacts": [], "reason": null}
+      ]
+    },
+    {
+      "id": "component",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {"id": "api-comments", "command_argv": ["go", "test", "-count=1", "-tags=integration", "./internal/http", "-run", "TestAPINoteBlockCommentEndpoints|TestAPINoteBlockCommentMutationEndpoints"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": 2, "skipped_test_count": 0, "cached": false, "artifacts": [], "reason": null}
+      ]
+    },
+    {
+      "id": "integration",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {"id": "integration-focused", "command_argv": ["go", "test", "-count=1", "-tags=integration", "./internal/domain", "./internal/http", "-run", "Test(PostgresIntegrationNoteBlockCommentMutations|APINoteBlockCommentEndpoints|APINoteBlockCommentMutationEndpoints)"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": 3, "skipped_test_count": 0, "cached": false, "artifacts": [], "reason": null},
+        {"id": "integration-all", "command_argv": ["make", "test-integration"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": 16, "skipped_test_count": 5, "cached": false, "artifacts": [], "reason": null},
+        {"id": "integration-cleanup", "command_argv": ["make", "integration-db-down"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null}
+      ]
+    },
+    {
+      "id": "regression",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {"id": "regression-test", "command_argv": ["make", "test"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": true, "artifacts": [], "reason": "Repository target passed; focused fresh unit evidence is recorded separately."},
+        {"id": "regression-check", "command_argv": ["make", "check"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": true, "artifacts": [], "reason": "Full backend harness gate passed."}
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "TC-API-001",
+      "requirement": "AC-1, AC-2, AC-5",
+      "gate": "component",
+      "check_ids": ["api-comments"],
+      "result": "PASS",
+      "assertions": [
+        {"id": "route-update", "boundary": "HTTP/router/handler", "result": "PASS", "expected": "Author PATCH returns 200 JSON comment", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+        {"id": "auth-required", "boundary": "JWT middleware", "result": "PASS", "expected": "Missing bearer token returns 401", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+        {"id": "validation", "boundary": "handler/domain", "result": "PASS", "expected": "Malformed JSON and invalid comment input are rejected", "actual": "Passed", "artifact": null, "observation_window_ms": null}
+      ],
+      "failure": {"message": null, "likely_affected_paths": [], "next_action": null}
+    },
+    {
+      "id": "TC-API-002",
+      "requirement": "AC-1, AC-3, AC-5",
+      "gate": "component",
+      "check_ids": ["api-comments"],
+      "result": "PASS",
+      "assertions": [
+        {"id": "author-only", "boundary": "domain/HTTP", "result": "PASS", "expected": "Non-author update and delete return 403", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+        {"id": "missing-resource", "boundary": "repository/domain/HTTP", "result": "PASS", "expected": "Missing scoped comment returns 404", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+        {"id": "delete", "boundary": "HTTP/repository/PostgreSQL", "result": "PASS", "expected": "Author delete returns 204 and removes comment from list", "actual": "Passed", "artifact": null, "observation_window_ms": null}
+      ],
+      "failure": {"message": null, "likely_affected_paths": [], "next_action": null}
+    },
+    {
+      "id": "TC-DB-001",
+      "requirement": "AC-4, AC-5",
+      "gate": "integration",
+      "check_ids": ["integration-focused", "integration-all"],
+      "result": "PASS",
+      "assertions": [
+        {"id": "metadata-persistence", "boundary": "PostgreSQL/repository", "result": "PASS", "expected": "Parent comment and mentions persist through create/list/update", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+        {"id": "delete-state", "boundary": "PostgreSQL/repository", "result": "PASS", "expected": "Deleted comment is absent and unrelated parent remains", "actual": "Passed", "artifact": null, "observation_window_ms": null}
+      ],
+      "failure": {"message": null, "likely_affected_paths": [], "next_action": null}
+    }
+  ],
+  "repair": {
+    "previous_run_id": null,
+    "source_changed": true,
+    "failed_scenario_ids": [],
+    "related_scenario_ids": [],
+    "mandatory_gates_revalidated": ["static", "unit", "component", "integration", "regression"]
+  }
+}

@@ -54,6 +54,8 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handle
 			// Note Block Comments
 			api.Get("/notes/{itemID}/blocks/{blockID}/comments", ch.List)
 			api.Post("/notes/{itemID}/blocks/{blockID}/comments", ch.Create)
+			api.Patch("/notes/{itemID}/blocks/{blockID}/comments/{commentID}", ch.Update)
+			api.Delete("/notes/{itemID}/blocks/{blockID}/comments/{commentID}", ch.Delete)
 		})
 	})
 

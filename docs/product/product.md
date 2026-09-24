@@ -11,7 +11,7 @@ mutations, sharing, and note block comments for the NotesTakingApp clients.
   and block comments.
 - A PostgreSQL integration test covers the core folder/note lifecycle, nested
   listing, content versioning, and soft-delete tombstones.
-- Focused API end-to-end suites cover all 19 active router operations across
+- Focused API end-to-end suites cover all 21 active router operations across
   health/authentication, items, note shares, and note block comments through
   JWT validation, handlers, service, and PostgreSQL.
 - OpenAPI contract at [`openapi.yaml`](../../openapi.yaml).
@@ -23,8 +23,6 @@ planning, conditional Kafka/idempotency guidance for future projects, capability
 inventories, and structured evidence templates. These are agent instructions and
 planning artifacts; they do not add tests or runtime capabilities to this service.
 
-- Resolve the documented OpenAPI drift: `/v1/debug/me` is not described, while
-  two comment update/delete operations are documented but not registered.
 - Expand deterministic repository coverage for additional shared-client and
   conflict scenarios.
 - Add migration version tracking when schema rollout needs become multi-instance.

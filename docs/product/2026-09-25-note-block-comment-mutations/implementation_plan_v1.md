@@ -21,8 +21,9 @@
 Implement the feature as one coherent change across the persistence, domain,
 transport, and integration-test layers. Add the paired comment migration and
 domain operations first, then register the existing contract operations in the
-handler/router and cover the complete authenticated HTTP behavior with the
-planned PostgreSQL scenarios. The change is intentionally not divided into
+handler/router, wire the forward migration into both Compose bootstrap
+profiles, and cover the complete authenticated HTTP behavior with the planned
+PostgreSQL scenarios. The change is intentionally not divided into
 independently tracked slices.
 
 ## Verification environment
