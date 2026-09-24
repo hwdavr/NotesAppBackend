@@ -1,9 +1,10 @@
 -include build/.env.local
 export
 
-.PHONY: up down logs build-local run-local migrate test test-integration integration-test-files fmt-check vet check harness-init integration-db-up integration-db-down help
+.PHONY: up down logs build-local run-local migrate test test-integration check-migration-runner integration-test-files fmt-check vet check harness-init integration-db-up integration-db-down help
 
 COMPOSE ?= docker compose
+PSQL ?= psql
 GO_CACHE_DIR ?= /tmp/notes-app-backend-go-cache
 
 help:
@@ -34,9 +35,29 @@ logs:
 migrate:
 	@echo "Running migrations..."
 	@test -n "$(DATABASE_URL)" || (echo "DATABASE_URL is required" >&2; exit 1)
+	@$(PSQL) "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -c 'CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())'
 	@for migration in migrations/*.up.sql; do \
-		echo "Applying $$migration"; \
-		psql "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f "$$migration"; \
+		version=$$(basename "$$migration" .up.sql); \
+		applied=$$($(PSQL) "$(DATABASE_URL)" -Atqc "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = '$$version')"); \
+		if [ "$$applied" = "t" ]; then \
+			echo "Skipping $$migration (already applied)"; \
+			continue; \
+		fi; \
+		case "$$version" in \
+			0001_init) check_sql="SELECT to_regclass('public.items') IS NOT NULL" ;; \
+			0002_add_is_favorite) check_sql="SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'items' AND column_name = 'is_favorite')" ;; \
+			0003_add_note_shares) check_sql="SELECT to_regclass('public.note_shares') IS NOT NULL" ;; \
+			0004_add_note_block_comments) check_sql="SELECT to_regclass('public.note_block_comments') IS NOT NULL" ;; \
+			0005_add_note_block_comment_metadata) check_sql="SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'note_block_comments' AND column_name = 'parent_comment_id') AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'note_block_comments' AND column_name = 'mentions')" ;; \
+		esac; \
+		existing=$$($(PSQL) "$(DATABASE_URL)" -Atqc "$$check_sql"); \
+		if [ "$$existing" = "t" ]; then \
+			echo "Recording existing $$migration"; \
+		else \
+			echo "Applying $$migration"; \
+			$(PSQL) "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -f "$$migration"; \
+		fi; \
+		$(PSQL) "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -c "INSERT INTO schema_migrations (version) VALUES ('$$version') ON CONFLICT (version) DO NOTHING"; \
 	done
 
 build-local:
@@ -60,13 +81,24 @@ integration-test-files:
 	@test -n "$$(rg -l '^//go:build integration' --glob '*_test.go' --glob '!**/.kilo/**' .)" || (echo "No integration-tagged Go tests found" >&2; exit 1)
 
 integration-db-up:
-	$(COMPOSE) -f build/docker-compose.test.yml up -d --wait db-test
+	$(COMPOSE) -f build/docker-compose.test.yml up -d --wait --force-recreate db-test
 
 integration-db-down:
 	$(COMPOSE) -f build/docker-compose.test.yml down
 
+check-migration-runner:
+	@$(MAKE) integration-db-up
+	@trap '$(MAKE) integration-db-down' EXIT; \
+		MIGRATION_DATABASE_URL=postgres://postgres:postgres@localhost:5432/notes_app_test?sslmode=disable \
+		PSQL_COMMAND="$(CURDIR)/harness/scripts/tests/psql-test-client.sh" \
+		bash harness/scripts/tests/check-migration-runner.sh
+
 test-integration: integration-test-files integration-db-up
-	DATABASE_URL=postgres://postgres:postgres@localhost:55432/notes_app_test?sslmode=disable GOCACHE=$(GO_CACHE_DIR) go test -tags=integration ./...
+	@trap '$(MAKE) integration-db-down' EXIT; \
+		MIGRATION_DATABASE_URL=postgres://postgres:postgres@localhost:5432/notes_app_test?sslmode=disable \
+		PSQL_COMMAND="$(CURDIR)/harness/scripts/tests/psql-test-client.sh" \
+		bash harness/scripts/tests/check-migration-runner.sh; \
+		DATABASE_URL=postgres://postgres:postgres@localhost:55432/notes_app_test?sslmode=disable GOCACHE=$(GO_CACHE_DIR) go test -tags=integration ./...
 
 check:
 	bash harness/scripts/check-full-source-rules.sh

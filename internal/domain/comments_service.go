@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"strings"
+	"unicode/utf8"
 )
 
 var validMentionKinds = map[string]struct{}{
@@ -19,11 +20,12 @@ func normalizeNoteBlockCommentInput(body string, mentions []MentionReference) (s
 	}
 
 	normalizedMentions := make([]MentionReference, len(mentions))
+	bodyLength := utf8.RuneCountInString(body)
 	for i, mention := range mentions {
 		mention.Kind = strings.TrimSpace(mention.Kind)
 		mention.TargetID = strings.TrimSpace(mention.TargetID)
 		mention.DisplayText = strings.TrimSpace(mention.DisplayText)
-		if _, ok := validMentionKinds[mention.Kind]; !ok || mention.TargetID == "" || mention.DisplayText == "" || mention.RangeStart < 0 || mention.RangeLength < 0 {
+		if _, ok := validMentionKinds[mention.Kind]; !ok || mention.TargetID == "" || mention.DisplayText == "" || mention.RangeStart < 0 || mention.RangeLength < 0 || mention.RangeStart > bodyLength || mention.RangeLength > bodyLength-mention.RangeStart {
 			return "", nil, ErrInvalidItem
 		}
 		normalizedMentions[i] = mention

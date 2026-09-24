@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -37,7 +39,7 @@ func (h *CommentsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	blockID := chi.URLParam(r, "blockID")
 
 	var req domain.CreateNoteBlockCommentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeCommentJSON(r, &req); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
@@ -60,7 +62,7 @@ func (h *CommentsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	commentID := chi.URLParam(r, "commentID")
 
 	var req domain.UpdateNoteBlockCommentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeCommentJSON(r, &req); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
@@ -91,20 +93,50 @@ func (h *CommentsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (h *CommentsHandler) writeDomainError(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
+	message := "internal server error"
 	switch {
 	case errors.Is(err, domain.ErrInvalidItem):
 		status = http.StatusBadRequest
+		message = "bad request"
 	case errors.Is(err, domain.ErrItemNotFound):
 		status = http.StatusNotFound
-	case errors.Is(err, domain.ErrConflict):
-		status = http.StatusConflict
+		message = "not found"
 	case errors.Is(err, domain.ErrUnauthorized):
 		status = http.StatusForbidden
+		message = "forbidden"
 	}
 
-	if status == http.StatusInternalServerError {
+	if status == http.StatusInternalServerError && h.Log != nil {
 		h.Log.Error("comments handler error", zap.Error(err))
 	}
 
-	http.Error(w, err.Error(), status)
+	http.Error(w, message, status)
+}
+
+func decodeCommentJSON(r *http.Request, destination any) error {
+	payload, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(destination); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		if err == nil {
+			return errors.New("request body must contain one JSON value")
+		}
+		return err
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &fields); err != nil {
+		return err
+	}
+	if mentions, ok := fields["mentions"]; ok && bytes.Equal(bytes.TrimSpace(mentions), []byte("null")) {
+		return errors.New("mentions must be an array")
+	}
+	return nil
 }

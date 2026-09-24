@@ -1,0 +1,69 @@
+{
+  "format_version": 1,
+  "kind": "verification_evidence",
+  "run_id": "note-block-comment-mutations-hardening-2026-09-25",
+  "result": "PASS",
+  "source": {
+    "revision": "198e5618a2d26fdd5347059a9c4666175bf73e91",
+    "working_tree_fingerprint": "sha256: cdf8fd906fe7e7f1f8932a81df586c59dd8fe2ad106a6b4e9a5540d396d50d98 (git diff --binary over changed source, contract, migration, test, and delivery-note paths; evidence artifact excluded to avoid self-reference)",
+    "artifact": "docs/product/2026-09-25-note-block-comment-mutations/verification_evidence_v2.json"
+  },
+  "plan": "docs/product/2026-09-25-note-block-comment-mutations/test_plan_v1.md",
+  "selection": {
+    "changed_paths": [
+      "Makefile",
+      "openapi.yaml",
+      "internal/domain/comments_service.go",
+      "internal/domain/comments_test.go",
+      "internal/domain/comments_integration_test.go",
+      "internal/http/handlers/comments.go",
+      "internal/http/handlers/comments_test.go",
+      "docs/product/product.md"
+    ],
+    "packages": ["./internal/domain", "./internal/http", "./internal/http/handlers"],
+    "dependent_packages": ["./..."],
+    "scenario_ids": ["HARDEN-JSON-001", "HARDEN-ERROR-001", "HARDEN-MIGRATION-001", "REGRESSION-001"],
+    "reason": "Follow-up hardening for input strictness, safe error mapping, mention bounds, truthful conflict contract, and migration rollout."
+  },
+  "environment": {
+    "identity": "Docker Compose disposable PostgreSQL 16 service build-db-test-1",
+    "real_dependencies": ["PostgreSQL 16", "in-process JWKS HTTP server"],
+    "mocked_boundaries": ["existing mock email service"],
+    "cleanup_result": "PASS: make integration-db-down removed the disposable database and network"
+  },
+  "gates": [
+    {"id": "static", "required": true, "result": "PASS", "reason": null, "checks": [
+      {"id": "openapi", "command_argv": ["bash", "harness/scripts/check-openapi.sh"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+      {"id": "migrations", "command_argv": ["bash", "harness/scripts/check-migrations.sh"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+      {"id": "static-build", "command_argv": ["go", "build", "./..."], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null},
+      {"id": "static-vet", "command_argv": ["go", "vet", "./..."], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": null}
+    ]},
+    {"id": "unit", "required": true, "result": "PASS", "reason": null, "checks": [
+      {"id": "hardening-unit", "command_argv": ["go", "test", "-count=1", "./internal/domain", "./internal/http/handlers", "-run", "Test(Comment|NoteBlockComment)"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": 17, "skipped_test_count": 0, "cached": false, "artifacts": [], "reason": null}
+    ]},
+    {"id": "component", "required": true, "result": "PASS", "reason": null, "checks": [
+      {"id": "api-regression", "command_argv": ["make", "test-integration"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": 26, "skipped_test_count": 5, "cached": false, "artifacts": [], "reason": "Full tagged suite includes comment API and existing HTTP scenarios."}
+    ]},
+    {"id": "integration", "required": true, "result": "PASS", "reason": null, "checks": [
+      {"id": "migration-adoption", "command_argv": ["make", "check-migration-runner"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": "Disposable PostgreSQL upgrade check applied pending 0005 and recorded migrations 0001-0005."},
+      {"id": "migration-repeat", "command_argv": ["make", "check-migration-runner"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": "The same disposable check reran migration and skipped all five recorded versions."}
+    ]},
+    {"id": "regression", "required": true, "result": "PASS", "reason": null, "checks": [
+      {"id": "full-check", "command_argv": ["make", "check"], "working_directory": ".", "result": "PASS", "exit_code": 0, "executed_test_count": null, "skipped_test_count": null, "cached": false, "artifacts": [], "reason": "Full backend harness gate passed after hardening."}
+    ]}
+  ],
+  "scenarios": [
+    {"id": "HARDEN-JSON-001", "requirement": "Strict request parsing", "gate": "unit", "check_ids": ["hardening-unit"], "result": "PASS", "assertions": [
+      {"id": "strict-json", "boundary": "HTTP handler", "result": "PASS", "expected": "Unknown fields, trailing values, and null mentions return 400", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+      {"id": "mention-bounds", "boundary": "domain validation", "result": "PASS", "expected": "Mention spans cannot exceed the body", "actual": "Passed", "artifact": null, "observation_window_ms": null}
+    ], "failure": {"message": null, "likely_affected_paths": [], "next_action": null}},
+    {"id": "HARDEN-ERROR-001", "requirement": "Safe error responses", "gate": "unit", "check_ids": ["hardening-unit"], "result": "PASS", "assertions": [
+      {"id": "error-sanitization", "boundary": "HTTP handler", "result": "PASS", "expected": "Internal errors return a stable message without database details", "actual": "Passed", "artifact": null, "observation_window_ms": null}
+    ], "failure": {"message": null, "likely_affected_paths": [], "next_action": null}},
+    {"id": "HARDEN-MIGRATION-001", "requirement": "Safe schema rollout", "gate": "integration", "check_ids": ["migration-adoption", "migration-repeat"], "result": "PASS", "assertions": [
+      {"id": "adoption", "boundary": "Makefile/PostgreSQL", "result": "PASS", "expected": "Existing schema is recorded without rerunning applied SQL", "actual": "Passed", "artifact": null, "observation_window_ms": null},
+      {"id": "repeat", "boundary": "Makefile/PostgreSQL", "result": "PASS", "expected": "Repeat migration run skips recorded versions", "actual": "Passed", "artifact": null, "observation_window_ms": null}
+    ], "failure": {"message": null, "likely_affected_paths": [], "next_action": null}}
+  ],
+  "repair": {"previous_run_id": "note-block-comment-mutations-2026-09-25", "source_changed": true, "failed_scenario_ids": [], "related_scenario_ids": [], "mandatory_gates_revalidated": ["static", "unit", "component", "integration", "regression"]}
+}

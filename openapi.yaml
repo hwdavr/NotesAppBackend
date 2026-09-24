@@ -528,8 +528,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
     delete:
       tags: [Note Comments]
       summary: Delete a note block comment

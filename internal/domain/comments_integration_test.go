@@ -69,7 +69,7 @@ func TestPostgresIntegrationNoteBlockCommentMutations(t *testing.T) {
 	}
 
 	updated, err := service.UpdateNoteBlockComment(ctx, integrationUserID, note.ID, "integration-block", child.ID, UpdateNoteBlockCommentRequest{
-		Body: "updated child comment",
+		Body: "Comment Integration Note",
 		Mentions: []MentionReference{{
 			Kind:        "note",
 			TargetID:    note.ID,
@@ -81,7 +81,7 @@ func TestPostgresIntegrationNoteBlockCommentMutations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("update child comment: %v", err)
 	}
-	if updated.Body != "updated child comment" || len(updated.Mentions) != 1 || updated.Mentions[0].Kind != "note" {
+	if updated.Body != "Comment Integration Note" || len(updated.Mentions) != 1 || updated.Mentions[0].Kind != "note" {
 		t.Fatalf("updated comment = %#v, want updated body and mentions", updated)
 	}
 

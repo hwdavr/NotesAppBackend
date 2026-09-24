@@ -25,7 +25,7 @@ planning artifacts; they do not add tests or runtime capabilities to this servic
 
 - Expand deterministic repository coverage for additional shared-client and
   conflict scenarios.
-- Add migration version tracking when schema rollout needs become multi-instance.
+- Add migration checksum and rollback automation when schema rollout needs become multi-instance.
 
 ## Harness Feature Tracker
 

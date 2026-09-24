@@ -35,6 +35,12 @@ func TestNoteBlockCommentInputNormalization(t *testing.T) {
 			mentions: []MentionReference{{Kind: "person", TargetID: "target", DisplayText: "display", RangeStart: -1}},
 			wantErr:  true,
 		},
+		{
+			name:     "rejects mention range outside body",
+			body:     "comment body",
+			mentions: []MentionReference{{Kind: "person", TargetID: "target", DisplayText: "display", RangeStart: 8, RangeLength: 8}},
+			wantErr:  true,
+		},
 	}
 
 	for _, tt := range tests {
