@@ -1,0 +1,29 @@
+{
+  "format_version": 1,
+  "kind": "planning_profile",
+  "project": "notes-app-backend",
+  "execution": "Agent-read planning metadata; no automatic capability runner is installed.",
+  "capabilities": {
+    "http": {"declared": true, "reason": "Chi HTTP API", "rules": ["api-contract.md"]},
+    "postgresql": {"declared": true, "reason": "PostgreSQL repositories and migrations", "rules": ["testing-strategy.md"]},
+    "kafka": {"declared": false, "reason": "No current producer or consumer", "rules": ["messaging-testing.md"]},
+    "idempotency": {"declared": false, "reason": "No blanket retry guarantee declared; assess individual operations in each feature spec", "rules": ["idempotency-testing.md"]},
+    "redis": {"declared": false, "reason": "No current Redis dependency", "rules": []}
+  },
+  "existing_checks": [
+    {"command": "make check", "proves": "Current formatting, vet, untagged tests, source boundary subset, path/operationId checks, migration wiring", "limits": "Aggregates failures; runs broad tests before all static checks; not five ordered gates; cached tests possible"},
+    {"command": "go build ./...", "proves": "Production packages compile", "limits": "No runtime evidence"},
+    {"command": "make test", "proves": "Current untagged Go tests", "limits": "Not targeted; cached tests and zero-test packages possible"},
+    {"command": "make test-integration", "proves": "Existing tagged HTTP/PostgreSQL scenarios when run successfully", "limits": "Fixed port and shared Compose identity prevent isolated environment ownership; caller must arrange cleanup with make integration-db-down"},
+    {"command": "bash harness/scripts/check-openapi.sh", "proves": "Listed path presence and unique operationIds", "limits": "No schema validity, compatibility diff, or runtime response validation"}
+  ],
+  "verification_gaps": [
+    "Automated fail-fast five-gate orchestration and dependency-aware test selection",
+    "Automated structured assertion evidence collection and validation",
+    "OpenAPI schema compatibility and runtime conformance tooling",
+    "Per-run isolated dynamic-port infrastructure orchestration",
+    "Separate-process production server startup verification",
+    "Comprehensive domain unit coverage"
+  ],
+  "optional_capability_policy": "Future requirements override this inventory: update the profile/test plan, load relevant rules, and mark missing required verification BLOCKED. False never means silently skip a requirement."
+}

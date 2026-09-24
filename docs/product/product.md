@@ -18,6 +18,11 @@ mutations, sharing, and note block comments for the NotesTakingApp clients.
 
 ## Roadmap
 
+The [harness environment](../../.harness/README.md) provides ordered verification
+planning, conditional Kafka/idempotency guidance for future projects, capability
+inventories, and structured evidence templates. These are agent instructions and
+planning artifacts; they do not add tests or runtime capabilities to this service.
+
 - Resolve the documented OpenAPI drift: `/v1/debug/me` is not described, while
   two comment update/delete operations are documented but not registered.
 - Expand deterministic repository coverage for additional shared-client and

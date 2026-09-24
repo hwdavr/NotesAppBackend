@@ -495,6 +495,62 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /v1/notes/{itemID}/blocks/{blockID}/comments/{commentID}:
+    patch:
+      tags: [Note Comments]
+      summary: Update a note block comment
+      description: Updates body and mentions for a comment. Only the author can update their own comment.
+      operationId: updateNoteBlockComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+        - $ref: "#/components/parameters/BlockID"
+        - $ref: "#/components/parameters/CommentID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteBlockCommentRequest"
+      responses:
+        "200":
+          description: Block comment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NoteBlockComment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags: [Note Comments]
+      summary: Delete a note block comment
+      description: Deletes a comment. Only the author can delete their own comment.
+      operationId: deleteNoteBlockComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ItemID"
+        - $ref: "#/components/parameters/BlockID"
+        - $ref: "#/components/parameters/CommentID"
+      responses:
+        "204":
+          description: Block comment deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /v1/notes/{itemID}/shares/{shareID}:
     patch:
       tags: [Note Shares]
@@ -577,6 +633,13 @@ components:
       schema:
         type: string
       description: Note document block identifier
+    CommentID:
+      in: path
+      name: commentID
+      required: true
+      schema:
+        type: string
+      description: Note block comment identifier
 
   responses:
     BadRequest:
@@ -593,6 +656,13 @@ components:
           schema:
             type: string
             example: invalid token
+    Forbidden:
+      description: Forbidden - insufficient permissions or not comment author
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: forbidden
     NotFound:
       description: Item not found
       content:
@@ -950,6 +1020,32 @@ components:
           format: date-time
           example: "2026-05-09T10:00:00Z"
 
+    MentionReference:
+      type: object
+      required:
+        - kind
+        - targetId
+        - displayText
+        - rangeStart
+        - rangeLength
+      properties:
+        kind:
+          type: string
+          enum: [person, date, note, folder]
+          example: person
+        targetId:
+          type: string
+          example: auth0|collab123
+        displayText:
+          type: string
+          example: Hannah Lee
+        rangeStart:
+          type: integer
+          example: 0
+        rangeLength:
+          type: integer
+          example: 10
+
     NoteBlockComment:
       type: object
       required:
@@ -970,6 +1066,11 @@ components:
         blockId:
           type: string
           example: block_001
+        parentCommentId:
+          type:
+            - string
+            - "null"
+          example: null
         authorUserId:
           type: string
           example: auth0|commenter123
@@ -987,6 +1088,10 @@ components:
         body:
           type: string
           example: Can we clarify this paragraph?
+        mentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentionReference"
         createdAt:
           type: string
           format: date-time
@@ -1004,6 +1109,28 @@ components:
         body:
           type: string
           example: Can we clarify this paragraph?
+        parentCommentId:
+          type:
+            - string
+            - "null"
+          example: null
+        mentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentionReference"
+
+    UpdateNoteBlockCommentRequest:
+      type: object
+      required:
+        - body
+      properties:
+        body:
+          type: string
+          example: Clarified paragraph text.
+        mentions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MentionReference"
 
     CreateNoteShareRequest:
       type: object
