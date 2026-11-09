@@ -1,0 +1,12 @@
+{"Time":"2026-11-09T21:17:18.628582+08:00","Action":"start","Package":"github.com/hwdavr/notes-app-backend/internal/domain"}
+{"Time":"2026-11-09T21:17:18.808949+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotion"}
+{"Time":"2026-11-09T21:17:18.80902+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotion","Output":"=== RUN   TestPostgresIntegrationNotion\n"}
+{"Time":"2026-11-09T21:17:18.834093+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotion","Output":"--- PASS: TestPostgresIntegrationNotion (0.03s)\n"}
+{"Time":"2026-11-09T21:17:18.834129+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotion","Elapsed":0.03}
+{"Time":"2026-11-09T21:17:18.834173+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotionDisconnectRollback"}
+{"Time":"2026-11-09T21:17:18.834178+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotionDisconnectRollback","Output":"=== RUN   TestPostgresIntegrationNotionDisconnectRollback\n"}
+{"Time":"2026-11-09T21:17:18.847836+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotionDisconnectRollback","Output":"--- PASS: TestPostgresIntegrationNotionDisconnectRollback (0.01s)\n"}
+{"Time":"2026-11-09T21:17:18.847892+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestPostgresIntegrationNotionDisconnectRollback","Elapsed":0.01}
+{"Time":"2026-11-09T21:17:18.847906+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Output":"PASS\n"}
+{"Time":"2026-11-09T21:17:18.848585+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Output":"ok  \tgithub.com/hwdavr/notes-app-backend/internal/domain\t0.220s\n"}
+{"Time":"2026-11-09T21:17:18.848605+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Elapsed":0.22}

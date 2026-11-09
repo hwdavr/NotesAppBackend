@@ -11,9 +11,10 @@ mutations, sharing, and note block comments for the NotesTakingApp clients.
   and block comments.
 - A PostgreSQL integration test covers the core folder/note lifecycle, nested
   listing, content versioning, and soft-delete tombstones.
-- Focused API end-to-end suites cover all 21 active router operations across
-  health/authentication, items, note shares, and note block comments through
-  JWT validation, handlers, service, and PostgreSQL.
+- Focused API end-to-end suites cover health/authentication, items, note shares,
+  note block comments, and Notion linking through JWT validation, handlers,
+  service, and PostgreSQL.
+- Notion account linking, connection status and disconnect use an OAuth callback and encrypted server-side credential storage. The documented Notion page and folder operations remain future work.
 - OpenAPI contract at [`openapi.yaml`](../../openapi.yaml).
 
 ## Roadmap

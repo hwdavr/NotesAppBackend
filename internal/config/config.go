@@ -6,11 +6,15 @@ import (
 )
 
 type Config struct {
-	Addr          string
-	DatabaseURL   string
-	Auth0Issuer   string
-	Auth0Audience string
-	Auth0JWKSURL  string
+	Addr                string
+	DatabaseURL         string
+	Auth0Issuer         string
+	Auth0Audience       string
+	Auth0JWKSURL        string
+	NotionClientID      string
+	NotionClientSecret  string
+	NotionRedirectURL   string
+	NotionEncryptionKey string
 }
 
 func FromEnv() Config {
@@ -21,11 +25,15 @@ func FromEnv() Config {
 	}
 
 	return Config{
-		Addr:          addr,
-		DatabaseURL:   must("DATABASE_URL"),
-		Auth0Issuer:   getenv("AUTH0_ISSUER", "https://dev-9sa8k5kv.us.auth0.com/"),
-		Auth0Audience: getenv("AUTH0_AUDIENCE", "https://notes-app.api"),
-		Auth0JWKSURL:  getenv("AUTH0_JWKS_URL", "https://dev-9sa8k5kv.us.auth0.com/.well-known/jwks.json"),
+		Addr:                addr,
+		NotionClientID:      os.Getenv("NOTION_CLIENT_ID"),
+		NotionClientSecret:  os.Getenv("NOTION_CLIENT_SECRET"),
+		NotionRedirectURL:   os.Getenv("NOTION_REDIRECT_URL"),
+		NotionEncryptionKey: os.Getenv("NOTION_ENCRYPTION_KEY"),
+		DatabaseURL:         must("DATABASE_URL"),
+		Auth0Issuer:         getenv("AUTH0_ISSUER", "https://dev-9sa8k5kv.us.auth0.com/"),
+		Auth0Audience:       getenv("AUTH0_AUDIENCE", "https://notes-app.api"),
+		Auth0JWKSURL:        getenv("AUTH0_JWKS_URL", "https://dev-9sa8k5kv.us.auth0.com/.well-known/jwks.json"),
 	}
 }
 

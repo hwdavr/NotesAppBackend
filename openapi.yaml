@@ -19,6 +19,7 @@ tags:
   - name: Folders
   - name: Notes
   - name: Note Shares
+  - name: Notion
 paths:
   /healthz:
     get:
@@ -495,60 +496,6 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /v1/notes/{itemID}/blocks/{blockID}/comments/{commentID}:
-    patch:
-      tags: [Note Comments]
-      summary: Update a note block comment
-      description: Updates body and mentions for a comment. Only the author can update their own comment.
-      operationId: updateNoteBlockComment
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/ItemID"
-        - $ref: "#/components/parameters/BlockID"
-        - $ref: "#/components/parameters/CommentID"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateNoteBlockCommentRequest"
-      responses:
-        "200":
-          description: Block comment updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NoteBlockComment"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-    delete:
-      tags: [Note Comments]
-      summary: Delete a note block comment
-      description: Deletes a comment. Only the author can delete their own comment.
-      operationId: deleteNoteBlockComment
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: "#/components/parameters/ItemID"
-        - $ref: "#/components/parameters/BlockID"
-        - $ref: "#/components/parameters/CommentID"
-      responses:
-        "204":
-          description: Block comment deleted
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-
   /v1/notes/{itemID}/shares/{shareID}:
     patch:
       tags: [Note Shares]
@@ -595,6 +542,185 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /v1/notion/callback:
+    get:
+      tags: [Notion]
+      summary: Complete Notion account linking
+      description: The browser is redirected to the app with linked, cancelled, or failed status. State is required and single-use.
+      operationId: completeNotionLink
+      parameters:
+        - in: query
+          name: state
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: code
+          schema:
+            type: string
+        - in: query
+          name: error
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to notesapp://notion/linked with the linking status
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: uri
+
+  /v1/notion/link:
+    post:
+      tags: [Notion]
+      summary: Start linking a Notion account
+      description: |
+        Returns the Notion OAuth authorize URL. The backend creates and checks the OAuth
+        `state` value and holds the Notion client secret and tokens; the app stores neither.
+        The browser return is delivered as `notesapp://notion/linked?status=linked|cancelled|failed`.
+      operationId: startNotionLink
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authorize URL created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionLinkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/notion/connection:
+    get:
+      tags: [Notion]
+      summary: Get the Notion connection status
+      operationId: getNotionConnection
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Connection status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionConnection"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    delete:
+      tags: [Notion]
+      summary: Disconnect the Notion account
+      operationId: disconnectNotion
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Disconnected
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/notion/pages:
+    get:
+      tags: [Notion]
+      summary: List Notion pages granted to the linked account
+      operationId: listNotionPages
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Granted pages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionPagesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/notion/folder:
+    get:
+      tags: [Notion]
+      summary: Get the chosen Notion folder and its direct sub-pages
+      description: Returns folderId as null when no folder has been chosen.
+      operationId: getNotionFolder
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Chosen folder, or an empty folder when none is chosen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionFolder"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+    put:
+      tags: [Notion]
+      summary: Choose the Notion folder to show
+      operationId: chooseNotionFolder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChooseNotionFolderRequest"
+      responses:
+        "200":
+          description: Folder chosen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionFolder"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
+  /v1/notion/pages/{pageId}:
+    get:
+      tags: [Notion]
+      summary: Read one Notion note (read-only)
+      description: Returns the note content fetched live from Notion. Nothing is stored by the backend.
+      operationId: getNotionNote
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: pageId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Note content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotionNote"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+
 components:
   securitySchemes:
     bearerAuth:
@@ -631,13 +757,6 @@ components:
       schema:
         type: string
       description: Note document block identifier
-    CommentID:
-      in: path
-      name: commentID
-      required: true
-      schema:
-        type: string
-      description: Note block comment identifier
 
   responses:
     BadRequest:
@@ -654,13 +773,6 @@ components:
           schema:
             type: string
             example: invalid token
-    Forbidden:
-      description: Forbidden - insufficient permissions or not comment author
-      content:
-        text/plain:
-          schema:
-            type: string
-            example: forbidden
     NotFound:
       description: Item not found
       content:
@@ -678,6 +790,16 @@ components:
           schema:
             type: string
             example: sync conflict
+
+    ServiceUnavailable:
+      description: Notion or the backend is temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MutationResult"
+        text/plain:
+          schema:
+            type: string
 
   schemas:
     ItemType:
@@ -787,7 +909,7 @@ components:
           example: [name]
         message:
           type: string
-          example: server kept newer value for: name
+          example: "server kept newer value for: name"
 
     CreateFolderRequest:
       type: object
@@ -1018,32 +1140,6 @@ components:
           format: date-time
           example: "2026-05-09T10:00:00Z"
 
-    MentionReference:
-      type: object
-      required:
-        - kind
-        - targetId
-        - displayText
-        - rangeStart
-        - rangeLength
-      properties:
-        kind:
-          type: string
-          enum: [person, date, note, folder]
-          example: person
-        targetId:
-          type: string
-          example: auth0|collab123
-        displayText:
-          type: string
-          example: Hannah Lee
-        rangeStart:
-          type: integer
-          example: 0
-        rangeLength:
-          type: integer
-          example: 10
-
     NoteBlockComment:
       type: object
       required:
@@ -1064,11 +1160,6 @@ components:
         blockId:
           type: string
           example: block_001
-        parentCommentId:
-          type:
-            - string
-            - "null"
-          example: null
         authorUserId:
           type: string
           example: auth0|commenter123
@@ -1086,10 +1177,6 @@ components:
         body:
           type: string
           example: Can we clarify this paragraph?
-        mentions:
-          type: array
-          items:
-            $ref: "#/components/schemas/MentionReference"
         createdAt:
           type: string
           format: date-time
@@ -1107,28 +1194,6 @@ components:
         body:
           type: string
           example: Can we clarify this paragraph?
-        parentCommentId:
-          type:
-            - string
-            - "null"
-          example: null
-        mentions:
-          type: array
-          items:
-            $ref: "#/components/schemas/MentionReference"
-
-    UpdateNoteBlockCommentRequest:
-      type: object
-      required:
-        - body
-      properties:
-        body:
-          type: string
-          example: Clarified paragraph text.
-        mentions:
-          type: array
-          items:
-            $ref: "#/components/schemas/MentionReference"
 
     CreateNoteShareRequest:
       type: object
@@ -1150,3 +1215,94 @@ components:
       properties:
         accessRole:
           $ref: "#/components/schemas/AccessRole"
+
+    NotionLinkResponse:
+      type: object
+      required:
+        - authorizeUrl
+      properties:
+        authorizeUrl:
+          type: string
+          format: uri
+
+    NotionConnection:
+      type: object
+      required:
+        - linked
+      properties:
+        linked:
+          type: boolean
+        accountName:
+          type: [string, "null"]
+
+    NotionPage:
+      type: object
+      required:
+        - id
+        - title
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+
+    NotionPagesResponse:
+      type: object
+      required:
+        - pages
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotionPage"
+
+    ChooseNotionFolderRequest:
+      type: object
+      required:
+        - pageId
+      properties:
+        pageId:
+          type: string
+
+    NotionFolder:
+      type: object
+      required:
+        - subPages
+      properties:
+        folderId:
+          type: [string, "null"]
+        title:
+          type: [string, "null"]
+        subPages:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotionPage"
+
+    NotionBlock:
+      type: object
+      required:
+        - type
+      description: Supported blocks are `heading_2` and `paragraph`; any other block carries `label` only.
+      properties:
+        type:
+          type: string
+        text:
+          type: [string, "null"]
+        label:
+          type: [string, "null"]
+
+    NotionNote:
+      type: object
+      required:
+        - id
+        - title
+        - blocks
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/NotionBlock"

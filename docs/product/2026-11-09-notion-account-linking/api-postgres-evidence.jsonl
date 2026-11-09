@@ -1,0 +1,8 @@
+{"Time":"2026-11-09T21:17:19.209624+08:00","Action":"start","Package":"github.com/hwdavr/notes-app-backend/internal/http"}
+{"Time":"2026-11-09T21:17:19.645045+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/http","Test":"TestNotionPostgresAuthenticatedAPI"}
+{"Time":"2026-11-09T21:17:19.645125+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/http","Test":"TestNotionPostgresAuthenticatedAPI","Output":"=== RUN   TestNotionPostgresAuthenticatedAPI\n"}
+{"Time":"2026-11-09T21:17:19.746494+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/http","Test":"TestNotionPostgresAuthenticatedAPI","Output":"--- PASS: TestNotionPostgresAuthenticatedAPI (0.10s)\n"}
+{"Time":"2026-11-09T21:17:19.746518+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/http","Test":"TestNotionPostgresAuthenticatedAPI","Elapsed":0.1}
+{"Time":"2026-11-09T21:17:19.746539+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/http","Output":"PASS\n"}
+{"Time":"2026-11-09T21:17:19.747665+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/http","Output":"ok  \tgithub.com/hwdavr/notes-app-backend/internal/http\t0.538s\n"}
+{"Time":"2026-11-09T21:17:19.747686+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/http","Elapsed":0.538}

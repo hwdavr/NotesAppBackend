@@ -30,7 +30,9 @@ func main() {
 	sh := &handlers.SharesHandler{Svc: svc, Log: log}
 	ch := &handlers.CommentsHandler{Svc: svc, Log: log}
 
-	router := apihttp.NewRouter(ih, sh, ch, cfg, log)
+	notionSvc := &domain.NotionService{Store: &domain.NotionRepository{DB: pg}, ClientID: cfg.NotionClientID, ClientSecret: cfg.NotionClientSecret, RedirectURL: cfg.NotionRedirectURL, EncryptionKey: cfg.NotionEncryptionKey}
+	notionHandler := &handlers.NotionHandler{Svc: notionSvc}
+	router := apihttp.NewRouter(ih, sh, ch, cfg, log, notionHandler)
 
 	log.Info("server starting", zap.String("addr", cfg.Addr))
 	if err := stdhttp.ListenAndServe(cfg.Addr, router); err != nil {

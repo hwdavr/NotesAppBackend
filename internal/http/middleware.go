@@ -105,16 +105,6 @@ func AuthMiddleware(cfg AuthConfig) func(http.Handler) http.Handler {
 
 			email = strings.ToLower(strings.TrimSpace(email))
 
-			if email == "" {
-				keys := make([]string, 0, len(claims))
-				for k := range claims {
-					keys = append(keys, k)
-				}
-				fmt.Printf("Auth Debug: Email missing. Available claims: %v\n", keys)
-			} else {
-				fmt.Printf("Auth: uid=%s email=%s\n", uid, email)
-			}
-
 			ctx := context.WithValue(r.Context(), userctx.UserIDKey, uid)
 			ctx = context.WithValue(ctx, userctx.UserEmailKey, email)
 			next.ServeHTTP(w, r.WithContext(ctx))

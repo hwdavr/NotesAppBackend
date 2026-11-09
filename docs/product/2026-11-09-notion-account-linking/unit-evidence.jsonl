@@ -1,0 +1,34 @@
+{"Time":"2026-11-09T21:17:02.684542+08:00","Action":"start","Package":"github.com/hwdavr/notes-app-backend/internal/domain"}
+{"Time":"2026-11-09T21:17:02.684649+08:00","Action":"start","Package":"github.com/hwdavr/notes-app-backend/internal/pkg/email"}
+{"Time":"2026-11-09T21:17:02.684679+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/pkg/email","Output":"?   \tgithub.com/hwdavr/notes-app-backend/internal/pkg/email\t[no test files]\n"}
+{"Time":"2026-11-09T21:17:02.684697+08:00","Action":"skip","Package":"github.com/hwdavr/notes-app-backend/internal/pkg/email","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.684703+08:00","Action":"start","Package":"github.com/hwdavr/notes-app-backend/internal/pkg/userctx"}
+{"Time":"2026-11-09T21:17:02.684726+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/pkg/userctx","Output":"?   \tgithub.com/hwdavr/notes-app-backend/internal/pkg/userctx\t[no test files]\n"}
+{"Time":"2026-11-09T21:17:02.684738+08:00","Action":"skip","Package":"github.com/hwdavr/notes-app-backend/internal/pkg/userctx","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865313+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionLinkAndState"}
+{"Time":"2026-11-09T21:17:02.865396+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionLinkAndState","Output":"=== RUN   TestNotionLinkAndState\n"}
+{"Time":"2026-11-09T21:17:02.865644+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionLinkAndState","Output":"--- PASS: TestNotionLinkAndState (0.00s)\n"}
+{"Time":"2026-11-09T21:17:02.86566+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionLinkAndState","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865665+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionConfigurationAndFailure"}
+{"Time":"2026-11-09T21:17:02.865669+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionConfigurationAndFailure","Output":"=== RUN   TestNotionConfigurationAndFailure\n"}
+{"Time":"2026-11-09T21:17:02.865686+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionConfigurationAndFailure","Output":"--- PASS: TestNotionConfigurationAndFailure (0.00s)\n"}
+{"Time":"2026-11-09T21:17:02.865689+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionConfigurationAndFailure","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865698+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure"}
+{"Time":"2026-11-09T21:17:02.8657+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure","Output":"=== RUN   TestNotionUpstreamFailure\n"}
+{"Time":"2026-11-09T21:17:02.865703+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/upstream_error"}
+{"Time":"2026-11-09T21:17:02.865705+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/upstream_error","Output":"=== RUN   TestNotionUpstreamFailure/upstream_error\n"}
+{"Time":"2026-11-09T21:17:02.865708+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/upstream_error","Output":"--- PASS: TestNotionUpstreamFailure/upstream_error (0.00s)\n"}
+{"Time":"2026-11-09T21:17:02.86571+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/upstream_error","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865712+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/malformed_response"}
+{"Time":"2026-11-09T21:17:02.865715+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/malformed_response","Output":"=== RUN   TestNotionUpstreamFailure/malformed_response\n"}
+{"Time":"2026-11-09T21:17:02.865767+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/malformed_response","Output":"--- PASS: TestNotionUpstreamFailure/malformed_response (0.00s)\n"}
+{"Time":"2026-11-09T21:17:02.865778+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/malformed_response","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865782+08:00","Action":"run","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/missing_token"}
+{"Time":"2026-11-09T21:17:02.865785+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/missing_token","Output":"=== RUN   TestNotionUpstreamFailure/missing_token\n"}
+{"Time":"2026-11-09T21:17:02.86579+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/missing_token","Output":"--- PASS: TestNotionUpstreamFailure/missing_token (0.00s)\n"}
+{"Time":"2026-11-09T21:17:02.865792+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure/missing_token","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865794+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure","Output":"--- PASS: TestNotionUpstreamFailure (0.00s)\n"}
+{"Time":"2026-11-09T21:17:02.865796+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Test":"TestNotionUpstreamFailure","Elapsed":0}
+{"Time":"2026-11-09T21:17:02.865798+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Output":"PASS\n"}
+{"Time":"2026-11-09T21:17:02.86641+08:00","Action":"output","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Output":"ok  \tgithub.com/hwdavr/notes-app-backend/internal/domain\t0.181s\n"}
+{"Time":"2026-11-09T21:17:02.866419+08:00","Action":"pass","Package":"github.com/hwdavr/notes-app-backend/internal/domain","Elapsed":0.182}

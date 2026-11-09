@@ -36,6 +36,15 @@ Required environment variables:
 - `AUTH0_AUDIENCE` default `https://notes-app.api`
 - `AUTH0_JWKS_URL` default `https://dev-9sa8k5kv.us.auth0.com/.well-known/jwks.json`
 
+Notion account linking additionally requires `NOTION_CLIENT_ID`,
+`NOTION_CLIENT_SECRET`, `NOTION_REDIRECT_URL` (the public URL ending in
+`/v1/notion/callback`, registered with Notion), and `NOTION_ENCRYPTION_KEY`
+(a base64-encoded, randomly generated 32-byte key). Keep the key and client
+secret in secret storage. The same encryption key must be retained across
+restarts to preserve access to stored credentials. Without these settings,
+starting a link returns 503; the rest of the API remains available.
+
+
 ## API
 
 Authenticated routes:
@@ -116,3 +125,13 @@ The API expects an Auth0 access token in `Authorization: Bearer <token>`. Valida
 - algorithm must be `RS256`
 - signature must validate against the Auth0 JWKS public key
 - `exp` must not be expired
+
+## NEON PostgresDB deployment
+
+```
+export DATABASE_URL='postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require'
+psql "$DATABASE_URL"
+
+// migrate the DB
+make -e migrate
+```

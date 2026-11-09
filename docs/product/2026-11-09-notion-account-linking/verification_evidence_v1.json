@@ -1,0 +1,373 @@
+{
+  "format_version": 1,
+  "kind": "verification_evidence",
+  "run_id": "notion-link-2026-11-09-final",
+  "result": "PASS",
+  "source": {
+    "revision": "ef55bdf0b53986f7649f6d5ce7035509a753f231",
+    "working_tree_fingerprint": "sha256:824c64f22c726f4d6fa195d7ca583883326159c066c945abd50cdde1228902c3",
+    "artifact": "summary_v1.md: fingerprint covers application, migration, test and harness files, excluding documentation"
+  },
+  "plan": "test_plan_v1.md",
+  "selection": {
+    "changed_paths": [
+      "internal/domain/notion.go",
+      "internal/domain/notion_repository.go",
+      "internal/http/handlers/notion.go",
+      "internal/http/router.go",
+      "openapi.yaml",
+      "migrations/0006_notion_link.up.sql",
+      "migrations/0006_notion_link.down.sql"
+    ],
+    "packages": [
+      "./internal/domain/...",
+      "./internal/http/..."
+    ],
+    "dependent_packages": [
+      "./cmd/server"
+    ],
+    "scenario_ids": [
+      "TC-UNIT",
+      "TC-API",
+      "TC-DB",
+      "TC-TX",
+      "TC-API-DB"
+    ],
+    "reason": "HTTP, domain and PostgreSQL account linking"
+  },
+  "environment": {
+    "identity": "local sandbox; dedicated Docker Compose project notion-link-codex-20261109 with disposable PostgreSQL 16",
+    "real_dependencies": [
+      "PostgreSQL 16",
+      "JWT verification",
+      "in-process Chi router"
+    ],
+    "mocked_boundaries": [
+      "Notion OAuth token endpoint",
+      "component storage"
+    ],
+    "cleanup_result": "PASS: fixture cleanup and dedicated Compose container/network removed"
+  },
+  "gates": [
+    {
+      "id": "static",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {
+          "id": "static-checks",
+          "command": "make fmt-check && go build ./... && make vet && bash harness/scripts/check-openapi.sh && bash harness/scripts/check-migrations.sh && bash harness/scripts/tests/check-migrations-contract.sh",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": null,
+          "skipped_test_count": null,
+          "cached": false,
+          "artifacts": [],
+          "reason": null,
+          "started_at": null,
+          "duration_ms": null
+        },
+        {
+          "id": "openapi",
+          "command": "redocly lint openapi.yaml --extends minimal",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": null,
+          "skipped_test_count": null,
+          "cached": false,
+          "artifacts": [
+            "openapi-validation.log"
+          ],
+          "reason": "10 style/documentation warnings, no validation errors; reconstructed comparison baseline",
+          "started_at": null,
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "id": "unit",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {
+          "id": "unit",
+          "command": "go test -json -count=1 ./internal/domain/... ./internal/pkg/... -run ^TestNotion",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": 6,
+          "skipped_test_count": 0,
+          "cached": false,
+          "artifacts": [
+            "unit-evidence.jsonl"
+          ],
+          "reason": null,
+          "started_at": null,
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "id": "component",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {
+          "id": "component",
+          "command": "NOTION_CONFORMANCE_VALIDATOR=... NOTION_OPENAPI_PATH=... NOTION_NODE_MODULES=... go test -json -count=1 ./internal/http/... -run ^TestNotion",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": 7,
+          "skipped_test_count": 0,
+          "cached": false,
+          "artifacts": [
+            "component-evidence.jsonl"
+          ],
+          "reason": "Response validator checked selected actual responses against the OpenAPI contract",
+          "started_at": null,
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "id": "integration",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {
+          "id": "repository",
+          "command": "go test -json -count=1 -tags=integration ./internal/domain -run ^TestPostgresIntegrationNotion",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": 2,
+          "skipped_test_count": 0,
+          "cached": false,
+          "artifacts": [
+            "postgres-evidence.jsonl"
+          ],
+          "reason": null,
+          "started_at": null,
+          "duration_ms": null
+        },
+        {
+          "id": "api-postgres",
+          "command": "go test -json -count=1 -tags=integration ./internal/http -run ^TestNotionPostgresAuthenticatedAPI$",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": 1,
+          "skipped_test_count": 0,
+          "cached": false,
+          "artifacts": [
+            "api-postgres-evidence.jsonl"
+          ],
+          "reason": null,
+          "started_at": null,
+          "duration_ms": null
+        },
+        {
+          "id": "migration",
+          "command": "psql migration 0006 down then up",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": null,
+          "skipped_test_count": null,
+          "cached": false,
+          "artifacts": [],
+          "reason": "Isolated PostgreSQL, both commands exited 0",
+          "started_at": null,
+          "duration_ms": null
+        }
+      ]
+    },
+    {
+      "id": "regression",
+      "required": true,
+      "result": "PASS",
+      "reason": null,
+      "checks": [
+        {
+          "id": "regression",
+          "command": "go test -json -count=1 ./...",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": 32,
+          "skipped_test_count": 0,
+          "cached": false,
+          "artifacts": [
+            "regression-evidence.jsonl"
+          ],
+          "reason": null,
+          "started_at": null,
+          "duration_ms": null
+        },
+        {
+          "id": "integration-regression",
+          "command": "COMPOSE_PROJECT_NAME=notion-link-codex-20261109 GOFLAGS=-count=1 make test-integration",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": null,
+          "skipped_test_count": null,
+          "cached": false,
+          "artifacts": [],
+          "reason": "Aggregate target exited 0; individual test count unavailable",
+          "started_at": null,
+          "duration_ms": null
+        },
+        {
+          "id": "make-check",
+          "command": "make check",
+          "working_directory": "/Users/hwdavr/Projects/2026_NotesTakingApp/NotesAppBackend",
+          "result": "PASS",
+          "exit_code": 0,
+          "executed_test_count": null,
+          "skipped_test_count": null,
+          "cached": false,
+          "artifacts": [],
+          "reason": "Aggregate target exited 0; some tests cached; fresh evidence recorded separately",
+          "started_at": null,
+          "duration_ms": null
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "TC-UNIT",
+      "requirement": "implementation_plan_v1.md AC-1 through AC-5",
+      "gate": "unit",
+      "check_ids": [
+        "unit"
+      ],
+      "result": "PASS",
+      "assertions": [
+        {
+          "id": "TC-UNIT-assertions",
+          "boundary": "unit",
+          "result": "PASS",
+          "expected": "OAuth state is random and bound to user, exchange errors do not persist, replay fails",
+          "actual": "Assertions passed",
+          "artifact": null,
+          "observation_window_ms": null
+        }
+      ]
+    },
+    {
+      "id": "TC-API",
+      "requirement": "implementation_plan_v1.md AC-1 through AC-5",
+      "gate": "component",
+      "check_ids": [
+        "component"
+      ],
+      "result": "PASS",
+      "assertions": [
+        {
+          "id": "TC-API-assertions",
+          "boundary": "component",
+          "result": "PASS",
+          "expected": "Authenticated link, status, isolation, replay, disconnect, unauthorized and missing-config responses match assertions and selected contract schemas",
+          "actual": "Assertions passed",
+          "artifact": null,
+          "observation_window_ms": null
+        }
+      ]
+    },
+    {
+      "id": "TC-DB",
+      "requirement": "implementation_plan_v1.md AC-1 through AC-5",
+      "gate": "integration",
+      "check_ids": [
+        "repository"
+      ],
+      "result": "PASS",
+      "assertions": [
+        {
+          "id": "TC-DB-assertions",
+          "boundary": "integration",
+          "result": "PASS",
+          "expected": "PostgreSQL preserves connection ownership and rejects expired, reused, and invalidated state",
+          "actual": "Assertions passed",
+          "artifact": null,
+          "observation_window_ms": null
+        }
+      ]
+    },
+    {
+      "id": "TC-TX",
+      "requirement": "implementation_plan_v1.md AC-1 through AC-5",
+      "gate": "integration",
+      "check_ids": [
+        "repository"
+      ],
+      "result": "PASS",
+      "assertions": [
+        {
+          "id": "TC-TX-assertions",
+          "boundary": "integration",
+          "result": "PASS",
+          "expected": "Disconnect commits and an injected delete failure rolls back both generation and connection; in-flight stale save fails",
+          "actual": "Assertions passed",
+          "artifact": null,
+          "observation_window_ms": null
+        }
+      ]
+    },
+    {
+      "id": "TC-API-DB",
+      "requirement": "implementation_plan_v1.md AC-1 through AC-5",
+      "gate": "integration",
+      "check_ids": [
+        "api-postgres"
+      ],
+      "result": "PASS",
+      "assertions": [
+        {
+          "id": "TC-API-DB-assertions",
+          "boundary": "integration",
+          "result": "PASS",
+          "expected": "JWT-protected HTTP flow persists and disconnects only its own PostgreSQL connection",
+          "actual": "Assertions passed",
+          "artifact": null,
+          "observation_window_ms": null
+        }
+      ]
+    }
+  ],
+  "repair": {
+    "previous_run_id": "2026-11-09-notion-link-planning-and-diagnostics",
+    "source_changed": "Replaced sandbox-blocked listener, repaired integration compile and runtime validator paths, added missing scenarios",
+    "failed_scenario_ids": [
+      "TC-UNIT",
+      "TC-API-DB",
+      "TC-API"
+    ],
+    "related_scenario_ids": [
+      "TC-STATIC",
+      "TC-DB"
+    ],
+    "mandatory_gates_revalidated": [
+      "static",
+      "unit",
+      "component",
+      "integration",
+      "regression"
+    ]
+  },
+  "limitations": [
+    "Redocly reported 10 style/documentation warnings.",
+    "Compatibility baseline reconstructed from the pre-existing contract by removing the newly added callback, not independently snapshotted.",
+    "Selected runtime responses validated; no live Notion call.",
+    "Static command timing and aggregate integration test count unavailable."
+  ]
+}

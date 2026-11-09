@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handlers.CommentsHandler, cfg config.Config, log *zap.Logger) http.Handler {
+func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handlers.CommentsHandler, cfg config.Config, log *zap.Logger, notionHandlers ...*handlers.NotionHandler) http.Handler {
 	r := chi.NewRouter()
 	r.Use(Logger(log))
 	r.Use(cors.Handler(cors.Options{
@@ -24,6 +24,10 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handle
 		_, _ = w.Write([]byte("ok"))
 	})
 
+	if len(notionHandlers) > 0 && notionHandlers[0] != nil {
+		r.Get("/v1/notion/callback", notionHandlers[0].Callback)
+	}
+
 	r.Group(func(pr chi.Router) {
 		pr.Use(AuthMiddleware(AuthConfig{
 			Issuer:   cfg.Auth0Issuer,
@@ -31,6 +35,11 @@ func NewRouter(ih *handlers.ItemsHandler, sh *handlers.SharesHandler, ch *handle
 			JWKSURL:  cfg.Auth0JWKSURL,
 		}))
 		pr.Route("/v1", func(api chi.Router) {
+			if len(notionHandlers) > 0 && notionHandlers[0] != nil {
+				api.Post("/notion/link", notionHandlers[0].Start)
+				api.Get("/notion/connection", notionHandlers[0].Status)
+				api.Delete("/notion/connection", notionHandlers[0].Disconnect)
+			}
 			// Items
 			api.Get("/items", ih.List)
 			api.Get("/debug/me", ih.DebugMe)

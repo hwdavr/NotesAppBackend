@@ -36,7 +36,7 @@ migrate:
 	@echo "Running migrations..."
 	@test -n "$(DATABASE_URL)" || (echo "DATABASE_URL is required" >&2; exit 1)
 	@$(PSQL) "$(DATABASE_URL)" -v ON_ERROR_STOP=1 -c 'CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())'
-	@for migration in migrations/*.up.sql; do \
+	@set -e; for migration in migrations/*.up.sql; do \
 		version=$$(basename "$$migration" .up.sql); \
 		applied=$$($(PSQL) "$(DATABASE_URL)" -Atqc "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = '$$version')"); \
 		if [ "$$applied" = "t" ]; then \
@@ -48,7 +48,9 @@ migrate:
 			0002_add_is_favorite) check_sql="SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'items' AND column_name = 'is_favorite')" ;; \
 			0003_add_note_shares) check_sql="SELECT to_regclass('public.note_shares') IS NOT NULL" ;; \
 			0004_add_note_block_comments) check_sql="SELECT to_regclass('public.note_block_comments') IS NOT NULL" ;; \
+			0006_notion_link) check_sql="SELECT to_regclass('public.notion_link_users') IS NOT NULL AND to_regclass('public.notion_oauth_states') IS NOT NULL" ;; \
 			0005_add_note_block_comment_metadata) check_sql="SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'note_block_comments' AND column_name = 'parent_comment_id') AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'note_block_comments' AND column_name = 'mentions')" ;; \
+			*) echo "Unknown migration version: $$version" >&2; exit 1 ;; \
 		esac; \
 		existing=$$($(PSQL) "$(DATABASE_URL)" -Atqc "$$check_sql"); \
 		if [ "$$existing" = "t" ]; then \
